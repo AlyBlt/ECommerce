@@ -1,0 +1,97 @@
+﻿<!-- Header Section Begin -->     @* Controller/Actionlara göre düzenlenecek, Menu linkleri doğru actionlara bağlanacak *@
+<header class="header">
+    <!-- Header Top Begin -->
+    <div class="header__top">
+        <div class="container">
+            <div class="row">
+                <!-- Sol Kısım: Email + Free Shipping -->
+                <div class="col-lg-6 col-md-6">
+                    <div class="header__top__left">
+                        <ul>
+                            <li><i class="fa fa-envelope"></i> hello@colorlib.com</li>
+                            <li>Free Shipping for all Order of $99</li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Sağ Kısım: Sosyal + Dil + Login -->
+                <div class="col-lg-6 col-md-6">
+                    <div class="header__top__right">
+                        <!-- Sosyal ikonlar -->
+                        <div class="header__top__right__social">
+                            <a href="#"><i class="fa fa-facebook"></i></a>
+                            <a href="#"><i class="fa fa-twitter"></i></a>
+                            <a href="#"><i class="fa fa-linkedin"></i></a>
+                            <a href="#"><i class="fa fa-pinterest-p"></i></a>
+                        </div>
+                        <!-- Dil seçimi -->
+                        <div class="header__top__right__language">
+                            <img src="~/img/language.png" alt="Language">
+                            <div>English</div>
+                            <span class="arrow_carrot-down"></span>
+                            <ul>
+                                <li><a href="#">Spanish</a></li>
+                                <li><a href="#">English</a></li>
+                            </ul>
+                        </div>
+                        <!-- Login -->
+                        <div class="header__top__right__auth">
+                            <a href="/Account/Login"><i class="fa fa-user"></i> Login</a>    @* Login linki doğru controller olmalı/Account.Login *@
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Header Top End -->
+    <!-- Logo + Menu + Cart Begin -->
+    <div class="container">
+        <div class="row">
+            <!-- Logo -->
+            <div class="col-lg-3 col-md-3 col-sm-6">
+                <div class="header__logo">
+                    <a href="/"><img src="~/img/logo.png" alt="Ogani Logo"></a>
+                </div>
+            </div>
+
+            <!-- Menü -->   @* gerçek MVC actionlarıyla eşleşmez/bizimkine göre değişecek *@
+            <div class="col-lg-6 col-md-6 col-sm-6">
+                <nav class="header__menu">
+                    <ul>
+                        <li class="active"><a href="/">Home</a></li>
+                        <li><a href="/Shop">Shop</a></li>
+                        <li>
+                            <a href="#">Pages</a>
+                            <ul class="header__menu__dropdown">   @* Üstte Pages sekmesi *@
+                                <li><a href="/Shop/Details">Shop Details</a></li>
+                                <li><a href="/Cart">Shopping Cart</a></li>
+                                <li><a href="/Checkout">Check Out</a></li>
+                                <li><a href="/Blog/Details">Blog Details</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="/Blog">Blog</a></li>
+                        <li><a href="/Contact">Contact</a></li>
+                    </ul>
+                </nav>
+            </div>
+
+            <!-- Sepet ve Favori -->
+            <div class="col-lg-3 col-md-3 col-sm-6">
+                <div class="header__cart">
+                    <ul>
+                        <li><a href="/Wishlist"><i class="fa fa-heart"></i> <span>1</span></a></li>
+                        <li><a href="/Cart"><i class="fa fa-shopping-bag"></i> <span>3</span></a></li>
+                    </ul>
+                    <div class="header__cart__price">item: <span>$150.00</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hamburger Menü (mobil için) //BU TAM OLARAK NERESİ EMİN OLAMADIM-KONTROL EDİLECEK!//-->
+        <div class="humberger__open">     @* Hamburger menü JS kısmı Ogani’de özel script ister *@
+            <i class="fa fa-bars"></i>     @* Kod doğru ama çalışması için Index.cshtml içine eklemek gerekir: *@
+        </div>
+    </div>
+    <!-- Logo + Menu + Cart End -->
+</header>
+<!-- Header Section End -->
+
