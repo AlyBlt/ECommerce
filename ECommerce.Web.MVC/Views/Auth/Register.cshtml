@@ -1,1 +1,27 @@
-﻿<h5>Uyelik olusturma sayfasi</h5>
+﻿@{
+    ViewData["Title"] = "Signup";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/auth-style.css" asp-append-version="true" />
+}
+
+<div class="auth-wrapper">
+    <div class="container">
+        <div class="login form">  @* buradaki class ismide login form auth-css'de muhtemelen css ayari adi bu registeri etkielemez' -t *@
+            <header>Signup</header>
+            <form action="#">
+                <input type="text" placeholder="Enter your email">
+                <input type="password" placeholder="Create a password">
+                <input type="password" placeholder="Confirm your password">
+                <input type="button" class="button" value="Signup"> @* burasi form olarak register post actionunu bağlayacağımız button -t *@
+            </form>
+            <div class="signup">
+                <span class="signup">
+                    Already have an account?
+                    <a asp-area="" asp-controller="Auth" asp-action="Login">Login</a>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
