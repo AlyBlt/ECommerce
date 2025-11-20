@@ -1,0 +1,43 @@
+﻿@{
+    ViewData["Title"] = "Kullanıcı Listeleme";
+}
+
+<h1 class="mb-4">Kullanıcılar</h1>
+
+<table class="table table-striped table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Ad Soyad</th>
+            <th>E-posta</th>
+            <th>Rol</th>
+            <th>Satıcı mı?</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1</td>
+            <td>Ali Yılmaz</td>
+            <td>ali@example.com</td>
+            <td>Üye</td>
+            <td>Hayır</td>
+            <td>
+                <a asp-action="Approve" asp-route-id="1"
+                   class="btn btn-sm btn-outline-primary">
+                    Satıcı Olarak Onayla
+                </a>
+            </td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>Ayşe Demir</td>
+            <td>ayse@example.com</td>
+            <td>Üye</td>
+            <td>Evet</td>
+            <td>
+                <span class="badge bg-success">Zaten Satıcı</span>
+            </td>
+        </tr>
+    </tbody>
+</table>

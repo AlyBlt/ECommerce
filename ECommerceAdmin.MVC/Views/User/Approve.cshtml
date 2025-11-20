@@ -1,0 +1,13 @@
+﻿@{
+    ViewData["Title"] = "Satıcı Olma Onayı";
+    var id = ViewBag.Id;
+}
+
+<h1 class="mb-4">Satıcı Olma Onayı</h1>
+
+<div class="alert alert-info">
+    <p>Id değeri <strong>@id</strong> olan kullanıcıyı satıcı olarak onaylıyorsunuz.</p>
+    <p>Gadasını aldığım bak emin misin buralarda iş garıştırıyon sorun yaşama sonra bah :D .</p>
+</div>
+
+<a asp-action="List" class="btn btn-secondary">Kullanıcı Listesine Dön</a>

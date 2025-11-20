@@ -20,6 +20,13 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+// Özel admin route: kategori düzenleme
+app.MapControllerRoute(
+    name: "admin-category-edit",
+    pattern: "category/{id}/edit",
+    defaults: new { controller = "Category", action = "Edit" });
+
+// Diðer her þey için default route
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
