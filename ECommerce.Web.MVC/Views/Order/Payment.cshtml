@@ -1,0 +1,49 @@
+﻿@model ECommerceWeb.MVC.Models.PaymentInformation
+@{
+    ViewData["Title"] = "Siparişi Tamamla";
+    Layout = "~/Views/Shared/_OganiLayout.cshtml";
+}
+
+<!-- Breadcrumb -->
+<section class="breadcrumb-section set-bg" data-setbg="~/img/breadcrumb.jpg">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <div class="breadcrumb__text">
+                    <h2>Sipariş Oluştur</h2>
+                    <div class="breadcrumb__option">
+                        <a href="/">Ana Sayfa</a>
+                        <span>Sipariş Oluştur</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<h2>Ödeme Yöntemi Seç</h2>
+<form asp-action="Payment" method="post">
+    
+    <div>
+        <label>
+            <input type="radio" name="PaymentMethod" value="Kredi Kartı" /> Kredi Kartı
+        </label>
+    </div>
+    <div>
+        <label>
+            <input type="radio" name="PaymentMethod" value="Kapıda Ödeme" /> Kapıda Ödeme
+        </label>
+    </div>
+    <div>
+        <label>
+            <input type="radio" name="PaymentMethod" value="Havale / EFT" /> Havale / EFT
+        </label>
+    </div>
+
+    <button type="submit" class="site-btn">Siparişi Tamamla</button>
+</form>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <p class="text-danger">Ödeme yöntemi seçmelisiniz.</p>
+}
