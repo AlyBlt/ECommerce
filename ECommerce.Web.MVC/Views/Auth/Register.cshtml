@@ -1,5 +1,7 @@
-﻿@{
-    ViewData["Title"] = "Signup";
+﻿@model ECommerceWeb.MVC.Models.AuthViewModels.RegisterViewModel
+
+@{
+     ViewData["Title"] = "Signup";
 }
 
 @section Styles {
@@ -8,14 +10,37 @@
 
 <div class="auth-wrapper">
     <div class="container">
-        <div class="login form">  @* buradaki class ismide login form auth-css'de muhtemelen css ayari adi bu registeri etkielemez' -t *@
+        <div class="login form"> 
             <header>Signup</header>
-            <form action="#">
-                <input type="text" placeholder="Enter your email">
-                <input type="password" placeholder="Create a password">
-                <input type="password" placeholder="Confirm your password">
-                <input type="button" class="button" value="Signup"> @* burasi form olarak register post actionunu bağlayacağımız button -t *@
+            <form asp-action="Register" method="post">
+                <div class="checkout__input">
+                    <p>Email <span>*</span></p>
+                    <input asp-for="Email" type="email" placeholder="Enter your email" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+                <div class="checkout__input">
+                    <p>Password <span>*</span></p>
+                    <input asp-for="Password" type="password" placeholder="Create a password" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+                <div class="checkout__input">
+                    <p>Confirm Password <span>*</span></p>
+                    <input asp-for="ConfirmPassword" type="password" placeholder="Confirm your password" />
+                    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                </div>
+                <button type="submit" class="site-btn">Signup</button>
             </form>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="text-danger mt-2">
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <p>@error.ErrorMessage</p>
+                    }
+                </div>
+            }
+
             <div class="signup">
                 <span class="signup">
                     Already have an account?
