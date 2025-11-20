@@ -1,0 +1,89 @@
+﻿@model ECommerceWeb.MVC.Models.Order
+@{
+    ViewData["Title"] = "Sipariş Detayları";
+    Layout = "~/Views/Shared/_OganiLayout.cshtml";
+}
+
+<!-- Breadcrumb -->
+<section class="breadcrumb-section set-bg" data-setbg="~/img/breadcrumb.jpg">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <div class="breadcrumb__text">
+                    <h2>Sipariş Detayları</h2>
+                    <div class="breadcrumb__option">
+                        <a href="/">Ana Sayfa</a>
+                        <span>Sipariş</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Order Details Section -->
+<section class="shoping-cart spad">
+    <div class="container">
+
+        <!-- Sipariş Bilgileri -->
+        <div class="row mb-4">
+            <div class="col-lg-12">
+                <div class="shoping__details">
+
+                    <h4 class="mb-3">Sipariş Tamamlandı</h4>
+
+                    <p><strong>Sipariş No:</strong> @Model.Id</p>
+                    <p><strong>Tarih:</strong> @Model.CreatedDate.ToString("dd.MM.yyyy HH:mm")</p>
+                    <p><strong>Toplam Tutar:</strong> @Model.TotalPrice ₺</p>
+                    <p><strong>Ödeme Yöntemi:</strong> @Model.PaymentMethod</p>
+
+                    <hr />
+
+                    <h4>Kullanıcı Bilgileri</h4>
+                    <p><strong>Ad Soyad:</strong> @Model.UserInformation.FullName</p>
+                    <p><strong>Adres:</strong> @Model.UserInformation.Address</p>
+                    <p><strong>Şehir:</strong> @Model.UserInformation.City</p>
+                    <p><strong>Posta Kodu:</strong> @Model.UserInformation.ZipCode</p>
+                    <p><strong>Telefon:</strong> @Model.UserInformation.Phone</p>
+                    <p><strong>Email:</strong> @Model.UserInformation.Email</p>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Sipariş Ürünleri -->
+        <h4 class="mb-3">Sipariş Ürünleri</h4>
+
+        <div class="shoping__cart__table">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="shoping__product">Ürün</th>
+                        <th>Adet</th>
+                        <th>Fiyat</th>
+                        <th>Toplam</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td class="shoping__cart__item">
+                                <img src="~/img/cart/cart-1.jpg" alt="">
+                                <h5>@item.Name</h5>
+                            </td>
+                            <td class="shoping__cart__quantity">@item.Quantity</td>
+                            <td class="shoping__cart__price">@item.Price ₺</td>
+                            <td class="shoping__cart__total">@item.TotalPrice ₺</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Toplam Tutar -->
+        <div class="shoping__cart__total mt-4">
+            <h4><strong>Genel Toplam:</strong> @Model.TotalPrice ₺</h4>
+        </div>
+    </div>
+</section>
