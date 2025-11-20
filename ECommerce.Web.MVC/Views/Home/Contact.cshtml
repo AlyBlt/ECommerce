@@ -1,10 +1,11 @@
 @{
-    Layout = "~/Views/Shared/_OganiLayout.cshtml";
-}
+    ViewData["Title"] = "Contact Us";
 
-@* NotlarAliye:Form için action ve method eklenebilir--><form asp-action="Contact" method="post"> *@
-    @* ileride kategori listesi veritaabnýndan gelecek muhtemelen ve dinamik olacak o nedenle viewmodel üzerinden gelmeli. Þu an statik olmasý ok. *@
-
+ }
+@* =======================================================
+    BÖLÜM 1: HERO ALANI (Normal Boyut)
+    - Sayfa içi genel arama ve sol kategori menüsü.
+======================================================= *@
 <section class="hero hero-normal">
     <div class="container">
         <div class="row">
@@ -37,7 +38,7 @@
                                 All Categories
                                 <span class="arrow_carrot-down"></span>
                             </div>
-                            <input type="text" placeholder="What do yo u need?">
+                            <input type="text" placeholder="What do you need?">
                             <button type="submit" class="site-btn">SEARCH</button>
                         </form>
                     </div>
@@ -55,6 +56,10 @@
         </div>
     </div>
 </section>
+
+@* =======================================================
+    BÖLÜM 2: BREADCRUMB (Gezinme Yolu)
+======================================================= *@
 <section class="breadcrumb-section set-bg" data-setbg="/img/breadcrumb.jpg">
     <div class="container">
         <div class="row">
@@ -62,7 +67,7 @@
                 <div class="breadcrumb__text">
                     <h2>Contact Us</h2>
                     <div class="breadcrumb__option">
-                        <a href="/">Home</a>
+                        <a asp-controller="Home" asp-action="Index">Home</a>
                         <span>Contact Us</span>
                     </div>
                 </div>
@@ -70,6 +75,10 @@
         </div>
     </div>
 </section>
+
+@* =======================================================
+    BÖLÜM 3: ÝLETÝÞÝM BÝLGÝLERÝ KUTULARI
+======================================================= *@
 <section class="contact spad">
     <div class="container">
         <div class="row">
@@ -104,6 +113,10 @@
         </div>
     </div>
 </section>
+
+@* =======================================================
+    BÖLÜM 4: HARÝTA ALANI
+======================================================= *@
 <div class="map">
     <iframe src="https://maps.google.com/maps?q=New%20York&t=&z=13&ie=UTF8&iwloc=&output=embed"
             height="500" style="border:0;" allowfullscreen="" aria-hidden="false" tabindex="0"></iframe>
@@ -118,6 +131,10 @@
         </div>
     </div>
 </div>
+
+@* =======================================================
+    BÖLÜM 5: ÝLETÝÞÝM FORMU
+======================================================= *@
 <div class="contact-form spad">
     <div class="container">
         <div class="row">
@@ -127,16 +144,16 @@
                 </div>
             </div>
         </div>
-        <form action="#">
+        <form method="post" asp-controller="Home" asp-action="Contact">
             <div class="row">
                 <div class="col-lg-6 col-md-6">
-                    <input type="text" placeholder="Your name">
+                    <input type="text" name="Name" placeholder="Your name">
                 </div>
                 <div class="col-lg-6 col-md-6">
-                    <input type="text" placeholder="Your Email">
+                    <input type="email" name="Email" placeholder="Your Email">
                 </div>
                 <div class="col-lg-12 text-center">
-                    <textarea placeholder="Your message"></textarea>
+                    <textarea name="Message" placeholder="Your message"></textarea>
                     <button type="submit" class="site-btn">SEND MESSAGE</button>
                 </div>
             </div>
