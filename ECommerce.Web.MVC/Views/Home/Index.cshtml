@@ -1,10 +1,20 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
-    Layout = "~/Views/Shared/_OganiLayout.cshtml";
 }
 
-@* ileride kategori listesi ve ürünler veritaabnından gelecek muhtemelen ve dinamik olacak o nedenle viewmodel üzerinden gelmeli. Şu an statik olması ok. *@
+@* =======================================================
+    - GENEL NOTLAR -
+  
+    İleride kategori listesi ve ürünler veritabanından gelecek.
+    Şu an statik HTML olarak duruyor.
+    Dinamik hale getirildiğinde burası ViewModel kullanacak.*@
 
+@* =======================================================
+    BÖLÜM 1: HERO ALANI (Giriş)
+    - Sol Taraftaki Kategori Menüsü
+    - Arama Çubuğu
+    - Ana Büyük Banner
+    ======================================================= *@
 <section class="hero">
     <div class="container">
         <div class="row">
@@ -63,6 +73,10 @@
         </div>
     </div>
 </section>
+@* =======================================================
+    BÖLÜM 2: KATEGORİ SLIDER
+    - Küçük resimli kayan kategori listesi
+    ======================================================= *@
 <section class="categories">
     <div class="container">
         <div class="row">
@@ -96,6 +110,11 @@
         </div>
     </div>
 </section>
+@* =======================================================
+    BÖLÜM 3: ÖNE ÇIKAN ÜRÜNLER (FEATURED)
+    - Filtreleme butonları (All, Oranges, Meat vb.)
+    - Ürün ızgarası (Grid)
+    ======================================================= *@
 <section class="featured spad">
     <div class="container">
         <div class="row">
@@ -115,6 +134,7 @@
             </div>
         </div>
         <div class="row featured__filter">
+            @* Ürün Kartı Örnekleri *@
             <div class="col-lg-3 col-md-4 col-sm-6 mix oranges fresh-meat">
                 <div class="featured__item">
                     <div class="featured__item__pic set-bg" data-setbg="/img/featured/feature-1.jpg">
@@ -130,6 +150,7 @@
                     </div>
                 </div>
             </div>
+            @* Diğer ürün divleri buraya devam ediyor... *@
             <div class="col-lg-3 col-md-4 col-sm-6 mix vegetables fastfood">
                 <div class="featured__item">
                     <div class="featured__item__pic set-bg" data-setbg="/img/featured/feature-2.jpg">
@@ -208,6 +229,10 @@
         </div>
     </div>
 </section>
+@* =======================================================
+    BÖLÜM 4: ORTA BANNER ALANI
+    - İki tane yan yana promosyon görseli
+    ======================================================= *@
 <div class="banner">
     <div class="container">
         <div class="row">
@@ -224,9 +249,16 @@
         </div>
     </div>
 </div>
+@* =======================================================
+    BÖLÜM 5: GRUPLU ÜRÜN LİSTELERİ
+    - Latest Products (Son Eklenenler)
+    - Top Rated (En Çok Oy Alanlar)
+    - Review Products (İncelenenler)
+    ======================================================= *@
 <section class="latest-product spad">
     <div class="container">
         <div class="row">
+            @* Kolon 1: Son Eklenenler *@
             <div class="col-lg-4 col-md-6">
                 <div class="latest-product__text">
                     <h4>Latest Products</h4>
@@ -265,6 +297,8 @@
                     </div>
                 </div>
             </div>
+
+            @* Kolon 2: En Çok Oy Alanlar *@
             <div class="col-lg-4 col-md-6">
                 <div class="latest-product__text">
                     <h4>Top Rated Products</h4>
@@ -279,8 +313,6 @@
                                     <span>$30.00</span>
                                 </div>
                             </a>
-                        </div>
-                        <div class="latest-prdouct__slider__item">
                             <a href="#" class="latest-product__item">
                                 <div class="latest-product__item__pic">
                                     <img src="/img/latest-product/lp-2.jpg" alt="">
@@ -294,6 +326,8 @@
                     </div>
                 </div>
             </div>
+
+            @* Kolon 3: İncelenen Ürünler *@
             <div class="col-lg-4 col-md-6">
                 <div class="latest-product__text">
                     <h4>Review Products</h4>
@@ -315,6 +349,10 @@
         </div>
     </div>
 </section>
+@* =======================================================
+    BÖLÜM 6: BLOG ALANI
+    - Anasayfa altındaki son blog yazıları
+    ======================================================= *@
 <section class="from-blog spad">
     <div class="container">
         <div class="row">
@@ -373,13 +411,3 @@
         </div>
     </div>
 </section>
-@section Scripts {
-    <script src="/js/jquery-3.3.1.min.js"></script>
-    <script src="/js/bootstrap.min.js"></script>
-    <script src="/js/jquery.nice-select.min.js"></script>
-    <script src="/js/jquery-ui.min.js"></script>
-    <script src="/js/jquery.slicknav.js"></script>
-    <script src="/js/mixitup.min.js"></script>
-    <script src="/js/owl.carousel.min.js"></script>
-    <script src="/js/main.js"></script>
-}

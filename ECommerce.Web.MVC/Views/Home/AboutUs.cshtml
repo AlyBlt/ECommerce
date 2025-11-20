@@ -1,0 +1,153 @@
+@* Template`de hakkýmýzda sayfasý yok kendimiz ekleyebiliriz þimdilik boþ býraktým. Footer içinde taghelper ile yönlendirme yapýldý. *@
+
+@{
+    ViewData["Title"] = "About Us";
+}
+
+@* =======================================================
+    BÖLÜM 1: HERO ALANI (Standart)
+    - Diðer sayfalardaki gibi menü ve arama çubuðu burada da var.
+   ======================================================= *@
+<section class="hero hero-normal">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-3">
+                <div class="hero__categories">
+                    <div class="hero__categories__all">
+                        <i class="fa fa-bars"></i>
+                        <span>All departments</span>
+                    </div>
+                    <ul>
+                        <li><a href="#">Fresh Meat</a></li>
+                        <li><a href="#">Vegetables</a></li>
+                        <li><a href="#">Fruit & Nut Gifts</a></li>
+                        <li><a href="#">Fresh Berries</a></li>
+                        <li><a href="#">Ocean Foods</a></li>
+                        <li><a href="#">Butter & Eggs</a></li>
+                        <li><a href="#">Fastfood</a></li>
+                        <li><a href="#">Fresh Onion</a></li>
+                        <li><a href="#">Papayaya & Crisps</a></li>
+                        <li><a href="#">Oatmeal</a></li>
+                        <li><a href="#">Fresh Bananas</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-lg-9">
+                <div class="hero__search">
+                    <div class="hero__search__form">
+                        <form action="#">
+                            <div class="hero__search__categories">
+                                All Categories
+                                <span class="arrow_carrot-down"></span>
+                            </div>
+                            <input type="text" placeholder="What do yo u need?">
+                            <button type="submit" class="site-btn">SEARCH</button>
+                        </form>
+                    </div>
+                    <div class="hero__search__phone">
+                        <div class="hero__search__phone__icon">
+                            <i class="fa fa-phone"></i>
+                        </div>
+                        <div class="hero__search__phone__text">
+                            <h5>+65 11.188.888</h5>
+                            <span>support 24/7 time</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* =======================================================
+    BÖLÜM 2: BREADCRUMB (Baþlýk Alaný)
+    - Arka plan resmini deðiþtirebilirsin (/img/breadcrumb.jpg)
+   ======================================================= *@
+<section class="breadcrumb-section set-bg" data-setbg="/img/breadcrumb.jpg">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <div class="breadcrumb__text">
+                    <h2>About Us</h2>
+                    <div class="breadcrumb__option">
+                        <a href="/">Home</a>
+                        <span>About Us</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* =======================================================
+    BÖLÜM 3: BÝZ KÝMÝZ? (Ana Ýçerik)
+    - Sol: Görsel (assets içinden uygun bir görsel seçtim)
+    - Sað: Baþlýk ve Paragraflar
+   ======================================================= *@
+<section class="contact spad">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-md-8 mx-auto text-center">
+
+                <img src="/img/logo.png" class="img-fluid d-block mx-auto" style="width: 100px; margin-bottom: 30px;" alt="Logo">
+
+                <div class="about__text">
+                    <div class="section-title">
+                        <h2>Who We Are</h2>
+                    </div>
+                    <p>
+                        We are an organic farm located in the heart of nature. Since 2010, we have been providing
+                        fresh, healthy, and 100% organic vegetables to our customers.
+                    </p>
+                    <p>
+                        Vestibulum ac diam sit amet quam vehicula elementum sed sit amet dui.
+                        Pellentesque in ipsum id orci porta dapibus.
+                    </p>
+                    <a href="/Contact" class="primary-btn">CONTACT</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* =======================================================
+    BÖLÜM 4: NEDEN BÝZ? (Özellikler)
+    - 3 Sütunlu Ýkon Kutularý
+    - Ogani ikon setini (icon_...) kullandým.
+   ======================================================= *@
+<section class="contact spad" style="padding-top: 0;">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <div class="section-title">
+                    <h2>Why Choose Us?</h2>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            @* KUTU 1 *@
+            <div class="col-lg-4 col-md-4 col-sm-6 text-center">
+                <div class="contact__widget">
+                    <span class="icon_check_alt2"></span>
+                    <h4>100% Organic</h4>
+                    <p>We do not use any chemicals in our products.</p>
+                </div>
+            </div>
+            @* KUTU 2 *@
+            <div class="col-lg-4 col-md-4 col-sm-6 text-center">
+                <div class="contact__widget">
+                    <span class="icon_loading"></span> <h4>Fast Delivery</h4>
+                    <p>We deliver your orders fresh within 24 hours.</p>
+                </div>
+            </div>
+            @* KUTU 3 *@
+            <div class="col-lg-4 col-md-4 col-sm-6 text-center">
+                <div class="contact__widget">
+                    <span class="icon_wallet"></span>
+                    <h4>Secure Payment</h4>
+                    <p>100% secure payment with credit card or cash.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

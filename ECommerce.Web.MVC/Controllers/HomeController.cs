@@ -3,36 +3,37 @@ using ECommerce.Web.MVC.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerce.Web.MVC.Controllers
-{             //AliyeNot: Routelar düzenlenecek.
-              //ProductDetail action’ý parametre almalý:Ödevde örnek route var: /product/{categoryName}-{title}-{id}/details
-              //Þu an action parametresiz, ileride Product ID veya kategori bilgisi ile çalýþacaksa eklenmeli
-              //yani-->>public IActionResult ProductDetail(int id, string categoryName, string title)
+{             
     public class HomeController : Controller
     {
-
-        //[Route("home")]-->>böyle olabilir-->>URL’yi SEO ve okunabilirlik açýsýndan ayarlýyor.
+        [Route("/")] // home yazýlmadan sadece site adý ile açýlsýn diye yapýldý.
+        [Route("home")] // .../home diyerek sayfaya yönlendirilmesi için yapýldý.
         public IActionResult Index()
         {
             return View();
         }
 
+        [Route("about-us")]
         public IActionResult AboutUs()
         {
             return View(); 
         }
-        [Route("contact")] //Contact->contact yapýldý c küçük harfle--SEO dostu
+
+        [Route("contact")]
         public IActionResult Contact()
         {
             return View();
         }
 
+        [Route("listing")]
         public IActionResult Listing()
         {
             return View();
         }
 
-        //[Route("product/{id}")] --->> public IActionResult ProductDetail(int id)
-        public IActionResult ProductDetail()
+        // Pages altýnda ki shop details sayfasýna yönlendiriliyor.
+        //[Route("product/{categoryName}-{title}-{id}/details")]  Veritabaný baðlandýktan sonra route açýlýcak test sürecinde sayfa yok olarak gösteriyor.
+        public IActionResult ProductDetail([FromRoute] string categoryName, [FromRoute] string title, [FromRoute] int id)
         {
             return View();
         }

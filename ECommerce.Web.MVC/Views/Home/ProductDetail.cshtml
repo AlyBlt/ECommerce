@@ -1,8 +1,20 @@
 @{
     ViewData["Title"] = "Vegetable’s Package Details";
-    Layout = "~/Views/Shared/_OganiLayout.cshtml";
 }
 
+@* =======================================================
+    GENEL NOTLAR:
+    Bu sayfa tek bir ürünün detaylarýný gösterir.
+    Ýleride buraya bir "ProductDetailViewModel" gönderilecek
+    ve tüm baþlýk, fiyat, resim bilgileri dinamik olacak.
+   ======================================================= *@
+
+@* =======================================================
+    BÖLÜM 1: HERO ALANI (Normal Boyut)
+    - Sol menü (Kategoriler)
+    - Arama çubuðu
+    - Sayfa içi genel header alaný
+======================================================= *@
 <section class="hero hero-normal">
     <div class="container">
         <div class="row">
@@ -53,6 +65,11 @@
         </div>
     </div>
 </section>
+@* =======================================================
+    BÖLÜM 2: BREADCRUMB (Gezinme Yolu)
+    - Kullanýcýnýn hangi sayfada olduðunu gösterir.
+    - Örn: Home > Vegetables > Vegetable’s Package
+======================================================= *@
 <section class="breadcrumb-section set-bg" data-setbg="/images/breadcrumb.jpg">
     <div class="container">
         <div class="row">
@@ -69,27 +86,36 @@
         </div>
     </div>
 </section>
+@* =======================================================
+    BÖLÜM 3: ÜRÜN DETAY ANA ALANI
+    - Sol Taraf: Ürün Resimleri (Büyük resim + Küçük resim slider'ý)
+    - Sað Taraf: Ürün Bilgileri (Fiyat, Puan, Stok, Sepete Ekleme)
+======================================================= *@
 <section class="product-details spad">
     <div class="container">
         <div class="row">
+
+            @* --- SOL KOLON: RESÝMLER --- *@
             <div class="col-lg-6 col-md-6">
                 <div class="product__details__pic">
                     <div class="product__details__pic__item">
                         <img class="product__details__pic__item--large"
-                             src="/images/product/details/product-details-1.jpg" alt="">
+                             src="/img/product/details/product-details-1.jpg" alt="">
                     </div>
                     <div class="product__details__pic__slider owl-carousel">
-                        <img data-imgbigurl="/images/product/details/product-details-2.jpg"
-                             src="/images/product/details/thumb-1.jpg" alt="">
-                        <img data-imgbigurl="/images/product/details/product-details-3.jpg"
-                             src="/images/product/details/thumb-2.jpg" alt="">
-                        <img data-imgbigurl="/images/product/details/product-details-5.jpg"
-                             src="/images/product/details/thumb-3.jpg" alt="">
-                        <img data-imgbigurl="/images/product/details/product-details-4.jpg"
-                             src="/images/product/details/thumb-4.jpg" alt="">
+                        <img data-imgbigurl="/img/product/details/product-details-2.jpg"
+                             src="/img/product/details/thumb-1.jpg" alt="">
+                        <img data-imgbigurl="/img/product/details/product-details-3.jpg"
+                             src="/img/product/details/thumb-2.jpg" alt="">
+                        <img data-imgbigurl="/img/product/details/product-details-5.jpg"
+                             src="/img/product/details/thumb-3.jpg" alt="">
+                        <img data-imgbigurl="/img/product/details/product-details-4.jpg"
+                             src="/img/product/details/thumb-4.jpg" alt="">
                     </div>
                 </div>
             </div>
+
+            @* --- SAÐ KOLON: BÝLGÝLER VE SEPET ÝÞLEMLERÝ --- *@
             <div class="col-lg-6 col-md-6">
                 <div class="product__details__text">
                     <h3>Vetgetable’s Package</h3>
@@ -107,6 +133,8 @@
                         vehicula elementum sed sit amet dui. Sed porttitor lectus nibh. Vestibulum ac diam sit amet
                         quam vehicula elementum sed sit amet dui. Proin eget tortor risus.
                     </p>
+
+                    @* Adet Seçimi ve Sepete Ekle Butonu *@
                     <div class="product__details__quantity">
                         <div class="quantity">
                             <div class="pro-qty">
@@ -116,6 +144,8 @@
                     </div>
                     <a href="#" class="primary-btn">ADD TO CARD</a>
                     <a href="#" class="heart-icon"><span class="icon_heart_alt"></span></a>
+
+                    @* Stok, Kargo ve Paylaþým Bilgileri *@
                     <ul>
                         <li><b>Availability</b> <span>In Stock</span></li>
                         <li><b>Shipping</b> <span>01 day shipping. <samp>Free pickup today</samp></span></li>
@@ -132,6 +162,8 @@
                     </ul>
                 </div>
             </div>
+
+            @* --- ALT KISIM: TABLAR (Açýklama, Bilgi, Yorumlar) --- *@
             <div class="col-lg-12">
                 <div class="product__details__tab">
                     <ul class="nav nav-tabs" role="tablist">
@@ -149,6 +181,7 @@
                         </li>
                     </ul>
                     <div class="tab-content">
+                        @* Tab 1: Açýklama *@
                         <div class="tab-pane active" id="tabs-1" role="tabpanel">
                             <div class="product__details__tab__desc">
                                 <h6>Products Infomation</h6>
@@ -176,6 +209,7 @@
                                 </p>
                             </div>
                         </div>
+                        @* Tab 2: Bilgi *@
                         <div class="tab-pane" id="tabs-2" role="tabpanel">
                             <div class="product__details__tab__desc">
                                 <h6>Products Infomation</h6>
@@ -201,6 +235,7 @@
                                 </p>
                             </div>
                         </div>
+                        @* Tab 3: Yorumlar *@
                         <div class="tab-pane" id="tabs-3" role="tabpanel">
                             <div class="product__details__tab__desc">
                                 <h6>Products Infomation</h6>
@@ -225,6 +260,11 @@
         </div>
     </div>
 </section>
+@* =======================================================
+    BÖLÜM 4: ÝLGÝLÝ/BENZER ÜRÜNLER (Related Products)
+    - Kullanýcýnýn ilgisini çekebilecek diðer ürünler.
+    - 4 Sütunlu grid yapýsý.
+======================================================= *@
 <section class="related-product">
     <div class="container">
         <div class="row">
