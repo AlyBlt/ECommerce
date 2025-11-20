@@ -1,0 +1,90 @@
+/* Import Google font - Poppins */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap');
+
+/* Auth Container Wrapper */
+.auth-wrapper {
+  min-height: 300px;
+  width: 100%;
+  background: transparent;
+  padding: 40px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.auth-wrapper .container{
+  position: relative;
+  max-width: 280px;
+  width: 100%;
+  background: #fff;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  font-family: 'Poppins', sans-serif;
+}
+.auth-wrapper .container .registration{
+  display: none;
+}
+.auth-wrapper #check:checked ~ .registration{
+  display: block;
+}
+.auth-wrapper #check:checked ~ .login{
+  display: none;
+}
+.auth-wrapper #check{
+  display: none;
+}
+.auth-wrapper .container .form{
+  padding: 1.2rem;
+}
+.auth-wrapper .form header{
+  font-size: 1.3rem;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+.auth-wrapper .form input{
+   height: 38px;
+   width: 100%;
+   padding: 0 10px;
+   font-size: 13px;
+   margin-bottom: 0.8rem;
+   border: 1px solid #ddd;
+   border-radius: 4px;
+   outline: none;
+ }
+.auth-wrapper .form input:focus{
+   box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+ }
+.auth-wrapper .form a{
+  font-size: 12px;
+  color: #009579;
+  text-decoration: none;
+}
+.auth-wrapper .form a:hover{
+  text-decoration: underline;
+}
+.auth-wrapper .form input.button{
+  color: #fff;
+  background: #009579;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin-top: 1rem;
+  cursor: pointer;
+  transition: 0.4s;
+}
+.auth-wrapper .form input.button:hover{
+  background: #006653;
+}
+.auth-wrapper .signup{
+  font-size: 13px;
+  text-align: center;
+}
+.auth-wrapper .signup label{
+  color: #009579;
+  cursor: pointer;
+}
+.auth-wrapper .signup label:hover{
+  text-decoration: underline;
+}
