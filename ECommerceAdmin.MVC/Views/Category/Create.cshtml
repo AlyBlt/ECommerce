@@ -1,0 +1,30 @@
+﻿@{
+    ViewData["Title"] = "Kategori Oluştur";
+}
+
+<h1 class="mb-4">Kategori Oluştur</h1>
+
+<form asp-action="Create" method="post" class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label">Kategori Adı</label>
+        <input type="text" name="Name" class="form-control" placeholder="Örn: Meyveler" />
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Aktif mi?</label>
+        <select name="IsActive" class="form-select">
+            <option value="true">Evet</option>
+            <option value="false">Hayır</option>
+        </select>
+    </div>
+
+    <div class="col-12">
+        <label class="form-label">Açıklama</label>
+        <textarea name="Description" class="form-control" rows="3"
+                  placeholder="Bu kategori ile ilgili kısa açıklama yazın."></textarea>
+    </div>
+
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-secondary ms-2">İptal</a>
+    </div>
+</form>
