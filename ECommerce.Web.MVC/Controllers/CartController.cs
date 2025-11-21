@@ -1,27 +1,39 @@
-﻿using ECommerceWeb.MVC.Models;
-using ECommerceWeb.MVC.Helpers;
+﻿using ECommerceWeb.MVC.Helpers;
+using ECommerceWeb.MVC.Models;
+using ECommerceWeb.MVC.Models.CartViewModels;
+using ECommerceWeb.MVC.Models.FavoritesViewModels;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerceWeb.MVC.Controllers
 {
     public class CartController : Controller
     {
-        // Sepete ürün eklemek için POST isteği
+        // View the cart page (GET request)
+        public IActionResult Index()
+        {
+            var cart = SessionHelper.GetCart(HttpContext);
+            ViewBag.Message = TempData["Message"]; // Message from redirection
+            HttpContext.Session.SetInt32("CartCount", cart.Items.Sum(i => i.Quantity));
+            return View(cart); // Return the actual cart page
+        }
+
+        // Add product to the cart (POST request)
         [HttpPost]
         public IActionResult AddProduct(int productId, string name, decimal price, int quantity = 1)
         {
             var cart = SessionHelper.GetCart(HttpContext);
             cart.AddItem(new CartItem { ProductId = productId, Name = name, Price = price, Quantity = quantity });
 
-            // Sepeti session'a kaydediyoruz
             SessionHelper.SaveCart(HttpContext, cart);
 
-            // Kullanıcıyı bir sonraki sayfaya yönlendiriyoruz
-            TempData["Message"] = "Ürün sepete eklendi."; // Yönlendirme sonrası mesaj taşıma
-            return RedirectToAction("Test", "Cart"); // Sepet sayfasına yönlendirme
+            // update cart count
+            HttpContext.Session.SetInt32("CartCount", cart.Items.Sum(i => i.Quantity));
+
+            TempData["Message"] = "Product added to the cart.";
+            return RedirectToAction("Index");
         }
 
-        // Sepetteki bir ürünü düzenlemek için POST isteği
+        // Edit product in the cart (POST request)
         [HttpPost]
         public IActionResult Edit(int productId, int quantity)
         {
@@ -30,41 +42,62 @@ namespace ECommerceWeb.MVC.Controllers
 
             if (item != null)
             {
-                if (quantity <= 0) // Eğer miktar sıfır veya daha küçükse ürünü sepetten çıkar
+                if (quantity <= 0)
                     cart.Items.Remove(item);
                 else
-                    item.Quantity = quantity; // Miktarı güncelle
+                    item.Quantity = quantity;
             }
 
-            // Güncellenmiş sepeti session'a kaydediyoruz
             SessionHelper.SaveCart(HttpContext, cart);
 
-            // Sepet sayfasına yönlendiriyoruz
-            return View("Test", "Cart"); // Sepet sayfasına yönlendirme
+            // update cart 
+            HttpContext.Session.SetInt32("CartCount", cart.Items.Sum(i => i.Quantity));
+
+            return RedirectToAction("Index");
         }
 
-        // Sepet sayfasını görüntülemek için GET isteği
-        public IActionResult Index()
-        {
-            var cart = SessionHelper.GetCart(HttpContext);
-            ViewBag.Message = TempData["Message"]; // Yönlendirme sonrası gelen mesaj
-            return View(cart); // Sepet görünümünü döndürüyoruz
-        }
-
+        // Clear the cart (POST request)
         [HttpPost]
         public IActionResult Clear()
         {
             var cart = new Cart();
-            SessionHelper.SaveCart(HttpContext, cart); // Sepeti temizle
-            TempData["Message"] = "Sepetiniz temizlendi.";
-            return RedirectToAction("Test");
+            SessionHelper.SaveCart(HttpContext, cart);
+
+            // update cart
+            HttpContext.Session.SetInt32("CartCount", 0);
+
+            TempData["Message"] = "Your cart has been cleared.";
+            return RedirectToAction("Index");
         }
 
-        // Sepet sayfasına yönlendiren yardımcı metod
-        public IActionResult Test()
+        //Favori listesinden cart a gitmek için
+        [HttpPost]
+        public IActionResult AddFavoritesToCart()
         {
+            // Favorileri al
+            var favorites = SessionHelper.GetFavorites(HttpContext) ?? new List<FavoriteItem>();
             var cart = SessionHelper.GetCart(HttpContext);
-            return View(cart); // Test sayfasını döndürüyoruz
+
+            foreach (var item in favorites)
+            {
+                // Sepete ekle (adet = 1)
+                cart.AddItem(new CartItem
+                {
+                    ProductId = item.ProductId,
+                    Name = item.Name,
+                    Price = item.Price,
+                    Quantity = 1
+                });
+            }
+
+            SessionHelper.SaveCart(HttpContext, cart);
+
+            // Sepet sayısını güncelle
+            HttpContext.Session.SetInt32("CartCount", cart.Items.Sum(i => i.Quantity));
+
+            TempData["Message"] = "All favorite items have been added to the cart.";
+
+            return RedirectToAction("Index"); // Cart sayfasına yönlendir
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace ECommerceWeb.MVC.Models
+namespace ECommerceWeb.MVC.Models.OrderviewModels
 {
     public class Order
     {

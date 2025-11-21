@@ -1,7 +1,8 @@
-﻿using ECommerceWeb.MVC.Models.HomeViewModels;
-using Microsoft.AspNetCore.Mvc;
-using ECommerceWeb.MVC.Helpers;
+﻿using ECommerceWeb.MVC.Helpers;
+using ECommerceWeb.MVC.Models.CartViewModels;
+using ECommerceWeb.MVC.Models.HomeViewModels;
 using ECommerceWeb.MVC.Models.ProductViewModels;
+using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 
 namespace ECommerceWeb.MVC.Controllers
@@ -114,13 +115,34 @@ namespace ECommerceWeb.MVC.Controllers
 
         // Sepete ekleme
         [HttpPost]
-        public IActionResult AddToCart(int id)
+        public IActionResult AddToCart(int id, int quantity = 1)
         {
-            var cart = HttpContext.Session.GetObjectFromJson<List<int>>("Cart") ?? new List<int>();
-            cart.Add(id);
-            HttpContext.Session.SetObjectAsJson("Cart", cart);
+            // Cart’ı session’dan al
+            var cart = SessionHelper.GetCart(HttpContext);
 
-            TempData["Message"] = "Product added to cart!";
+            // Ürünü bul
+            var product = GetProducts().FirstOrDefault(p => p.Id == id);
+            if (product == null) return NotFound();
+
+            // CartItem oluştur
+            var item = new CartItem
+            {
+                ProductId = product.Id,
+                Name = product.Name,
+                Price = product.Price,
+                Quantity = quantity
+            };
+
+            cart.AddItem(item);
+
+            // Cart’ı session’a kaydet
+            SessionHelper.SaveCart(HttpContext, cart);
+
+            // Sepet sayısı ve toplam fiyatını güncelle
+            HttpContext.Session.SetInt32("CartCount", cart.Items.Count);
+            HttpContext.Session.SetInt32("CartTotal", (int)cart.TotalPrice);
+
+            TempData["Message"] = $"{product.Name} added to cart!";
             return RedirectToAction("Listing", "Home");
         }
     }

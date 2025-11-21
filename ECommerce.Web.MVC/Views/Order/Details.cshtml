@@ -1,6 +1,7 @@
-﻿@model ECommerceWeb.MVC.Models.Order
+﻿@using ECommerceWeb.MVC.Models.OrderviewModels
+@model Order
 @{
-    ViewData["Title"] = "Sipariş Detayları";
+    ViewData["Title"] = "Order Details";
     Layout = "~/Views/Shared/_OganiLayout.cshtml";
 }
 
@@ -10,10 +11,10 @@
         <div class="row">
             <div class="col-lg-12 text-center">
                 <div class="breadcrumb__text">
-                    <h2>Sipariş Detayları</h2>
+                    <h2>Order Details</h2>
                     <div class="breadcrumb__option">
-                        <a href="/">Ana Sayfa</a>
-                        <span>Sipariş</span>
+                        <a href="/">Home</a>
+                        <span>Order</span>
                     </div>
                 </div>
             </div>
@@ -25,43 +26,43 @@
 <section class="shoping-cart spad">
     <div class="container">
 
-        <!-- Sipariş Bilgileri -->
+        <!-- Order Information -->
         <div class="row mb-4">
             <div class="col-lg-12">
                 <div class="shoping__details">
 
-                    <h4 class="mb-3">Sipariş Tamamlandı</h4>
+                    <h4 class="mb-3">Order Completed</h4>
 
-                    <p><strong>Sipariş No:</strong> @Model.Id</p>
-                    <p><strong>Tarih:</strong> @Model.CreatedDate.ToString("dd.MM.yyyy HH:mm")</p>
-                    <p><strong>Toplam Tutar:</strong> @Model.TotalPrice ₺</p>
-                    <p><strong>Ödeme Yöntemi:</strong> @Model.PaymentMethod</p>
+                    <p><strong>Order No:</strong> @Model.Id</p>
+                    <p><strong>Date:</strong> @Model.CreatedDate.ToString("dd.MM.yyyy HH:mm")</p>
+                    <p><strong>Total Price:</strong> @Model.TotalPrice ₺</p>
+                    <p><strong>Payment Method:</strong> @Model.PaymentMethod</p>
 
                     <hr />
 
-                    <h4>Kullanıcı Bilgileri</h4>
-                    <p><strong>Ad Soyad:</strong> @Model.UserInformation.FullName</p>
-                    <p><strong>Adres:</strong> @Model.UserInformation.Address</p>
-                    <p><strong>Şehir:</strong> @Model.UserInformation.City</p>
-                    <p><strong>Posta Kodu:</strong> @Model.UserInformation.ZipCode</p>
-                    <p><strong>Telefon:</strong> @Model.UserInformation.Phone</p>
+                    <h4>User Information</h4>
+                    <p><strong>Full Name:</strong> @Model.UserInformation.FullName</p>
+                    <p><strong>Address:</strong> @Model.UserInformation.Address</p>
+                    <p><strong>City:</strong> @Model.UserInformation.City</p>
+                    <p><strong>Zip Code:</strong> @Model.UserInformation.ZipCode</p>
+                    <p><strong>Phone:</strong> @Model.UserInformation.Phone</p>
                     <p><strong>Email:</strong> @Model.UserInformation.Email</p>
 
                 </div>
             </div>
         </div>
 
-        <!-- Sipariş Ürünleri -->
-        <h4 class="mb-3">Sipariş Ürünleri</h4>
+        <!-- Order Products -->
+        <h4 class="mb-3">Order Products</h4>
 
         <div class="shoping__cart__table">
             <table>
                 <thead>
                     <tr>
-                        <th class="shoping__product">Ürün</th>
-                        <th>Adet</th>
-                        <th>Fiyat</th>
-                        <th>Toplam</th>
+                        <th class="shoping__product">Product</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -81,9 +82,9 @@
             </table>
         </div>
 
-        <!-- Toplam Tutar -->
+        <!-- Total Price -->
         <div class="shoping__cart__total mt-4">
-            <h4><strong>Genel Toplam:</strong> @Model.TotalPrice ₺</h4>
+            <h4><strong>Total Amount:</strong> @Model.TotalPrice ₺</h4>
         </div>
     </div>
 </section>
