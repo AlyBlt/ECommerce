@@ -12,6 +12,9 @@ namespace ECommerceWeb.MVC.Models.HomeViewModels
         public decimal? OldPrice { get; set; } // İndirim varsa
         public bool IsOnSale => OldPrice.HasValue;
 
+        // Sepette mi?
+        public bool InCart { get; set; } = false;
+
         public List<ProductComment> Comments { get; set; } = new List<ProductComment>();
     }
 }

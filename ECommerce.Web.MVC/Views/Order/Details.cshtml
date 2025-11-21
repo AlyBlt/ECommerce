@@ -5,86 +5,131 @@
     Layout = "~/Views/Shared/_OganiLayout.cshtml";
 }
 
-<!-- Breadcrumb -->
-<section class="breadcrumb-section set-bg" data-setbg="~/img/breadcrumb.jpg">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-12 text-center">
-                <div class="breadcrumb__text">
-                    <h2>Order Details</h2>
-                    <div class="breadcrumb__option">
-                        <a href="/">Home</a>
-                        <span>Order</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
 
 <!-- Order Details Section -->
-<section class="shoping-cart spad">
+<section class="checkout spad">
     <div class="container">
 
-        <!-- Order Information -->
-        <div class="row mb-4">
+        <!-- ORDER SUMMARY BOX -->
+        <div class="row mb-5">
             <div class="col-lg-12">
-                <div class="shoping__details">
+                <div class="checkout__order p-4">
 
-                    <h4 class="mb-3">Order Completed</h4>
+                    <h4 class="mb-4">Order Summary</h4>
 
-                    <p><strong>Order No:</strong> @Model.Id</p>
-                    <p><strong>Date:</strong> @Model.CreatedDate.ToString("dd.MM.yyyy HH:mm")</p>
-                    <p><strong>Total Price:</strong> @Model.TotalPrice ₺</p>
-                    <p><strong>Payment Method:</strong> @Model.PaymentMethod</p>
-
-                    <hr />
-
-                    <h4>User Information</h4>
-                    <p><strong>Full Name:</strong> @Model.UserInformation.FullName</p>
-                    <p><strong>Address:</strong> @Model.UserInformation.Address</p>
-                    <p><strong>City:</strong> @Model.UserInformation.City</p>
-                    <p><strong>Zip Code:</strong> @Model.UserInformation.ZipCode</p>
-                    <p><strong>Phone:</strong> @Model.UserInformation.Phone</p>
-                    <p><strong>Email:</strong> @Model.UserInformation.Email</p>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <strong>Order No:</strong> @Model.Id
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>Date:</strong> @Model.CreatedDate.ToString("dd.MM.yyyy HH:mm")
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>Payment:</strong> @Model.PaymentMethod
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>Total Price:</strong> @Model.TotalPrice ₺
+                        </div>
+                    </div>
 
                 </div>
             </div>
         </div>
 
-        <!-- Order Products -->
-        <h4 class="mb-3">Order Products</h4>
+        <!-- USER INFORMATION -->
+        <div class="row mb-5">
+            <div class="col-lg-12">
+                <div class="checkout__form p-4">
 
-        <div class="shoping__cart__table">
-            <table>
-                <thead>
-                    <tr>
-                        <th class="shoping__product">Product</th>
-                        <th>Quantity</th>
-                        <th>Price</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model.Items)
-                    {
-                        <tr>
-                            <td class="shoping__cart__item">
-                                <img src="~/img/cart/cart-1.jpg" alt="">
-                                <h5>@item.Name</h5>
-                            </td>
-                            <td class="shoping__cart__quantity">@item.Quantity</td>
-                            <td class="shoping__cart__price">@item.Price ₺</td>
-                            <td class="shoping__cart__total">@item.TotalPrice ₺</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                    <h4 class="mb-4">User Information</h4>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Full Name</label>
+                            <div class="profile__info-box">@Model.UserInformation.FullName</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label>Email</label>
+                            <div class="profile__info-box">@Model.UserInformation.Email</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label>Phone</label>
+                            <div class="profile__info-box">@Model.UserInformation.Phone</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label>Zip Code</label>
+                            <div class="profile__info-box">@Model.UserInformation.ZipCode</div>
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label>Address</label>
+                            <div class="profile__info-box">@Model.UserInformation.Address</div>
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label>City</label>
+                            <div class="profile__info-box">@Model.UserInformation.City</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </div>
 
-        <!-- Total Price -->
-        <div class="shoping__cart__total mt-4">
-            <h4><strong>Total Amount:</strong> @Model.TotalPrice ₺</h4>
+        <!-- PRODUCTS -->
+        <div class="row mb-4">
+            <div class="col-lg-12">
+                <h4 class="mb-3">Order Products</h4>
+
+                <div class="shoping__cart__table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="shoping__product">Product</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td class="shoping__cart__item">
+                                        <img src="~/img/cart/cart-1.jpg" alt="">
+                                        <h5>@item.Name</h5>
+                                    </td>
+                                    <td class="shoping__cart__quantity">@item.Quantity</td>
+                                    <td class="shoping__cart__price">@item.Price ₺</td>
+                                    <td class="shoping__cart__total">@item.TotalPrice ₺</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+
+        <!-- TOTAL AMOUNT -->
+        <div class="row mt-4">
+            <div class="col-lg-12 text-end">
+                <h4><strong>Total Amount:</strong> @Model.TotalPrice ₺</h4>
+            </div>
+        </div>
+
     </div>
 </section>
+
+<style>
+    .profile__info-box {
+        background: #f8f8f8;
+        padding: 12px 15px;
+        border-radius: 5px;
+        border: 1px solid #ebebeb;
+        font-size: 15px;
+        color: #333;
+    }
+</style>

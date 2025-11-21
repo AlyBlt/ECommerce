@@ -120,10 +120,10 @@
                                     </h5>
 
                                     @* --- Add to Cart Form --- *@
-                                    <form asp-controller="Product" asp-action="AddToCart" method="post" class="mt-2">
+                                    <form asp-controller="Product" asp-action="AddToCart" method="post" class="mt-2 d-flex align-items-center">
                                         <input type="hidden" name="id" value="@product.Id" />
-                                        <input type="number" name="quantity" value="1" min="1" style="width:50px;" />
-                                        <button type="submit" class="btn btn-primary btn-sm">
+                                        <input type="number" name="quantity" value="1" min="1" style="width:50px; margin-right:10px;" />
+                                        <button type="submit" class="site-btn">
                                             <i class="fa fa-shopping-cart"></i> Add to Cart
                                         </button>
                                     </form>

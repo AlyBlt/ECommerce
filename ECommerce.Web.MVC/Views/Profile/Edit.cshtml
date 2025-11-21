@@ -1,85 +1,79 @@
-﻿@model ECommerceWeb.MVC.Models.UserInformation
+﻿@model ECommerceWeb.MVC.Models.OrderviewModels.UserInformation
 @{
     ViewData["Title"] = "Edit Profile";
 }
 
-<!-- Breadcrumb Section Begin -->
-<section class="breadcrumb-section set-bg" data-setbg="~/img/breadcrumb.jpg">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-12 text-center">
-                <div class="breadcrumb__text">
-                    <h2>Edit Profile</h2>
-                    <div class="breadcrumb__option">
-                        <a href="/">Home</a>
-                        <a href="/profile/details">Profile</a>
-                        <span>Edit</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-<!-- Breadcrumb Section End -->
-
-<section class="contact spad">
+<section class="checkout profile-section">
     <div class="container">
         <div class="row">
 
-            <!-- Menü -->
-            <div class="col-lg-4 col-md-5">
-                <div class="contact__sidebar">
+            <!-- LEFT MENU -->
+            <div class="col-lg-4 col-md-4">
+                <div class="checkout__order profile-sidebar">
                     <h4>Account Menu</h4>
-                    <ul>
-                        <li><a href="/profile/details">My Profile</a></li>
-                        <li><a href="/profile/edit">Edit Profile</a></li>
-                        <li><a href="/profile/my-orders">My Orders</a></li>
-                        <li><a href="/profile/my-products">My Products</a></li>
+                    <ul class="list-group list-group-flush profile-menu">
+                        <li class="list-group-item"><a href="/profile/details">My Profile</a></li>
+                        <li class="list-group-item"><a href="/profile/edit">Edit Profile</a></li>
+                        <li class="list-group-item"><a href="/profile/my-orders">My Orders</a></li>
+                        <li class="list-group-item"><a href="/profile/my-products">My Products</a></li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Form Alanı -->
-            <div class="col-lg-8 col-md-7">
-                <div class="contact__content">
+            <!-- RIGHT -->
+            <div class="col-lg-8 col-md-8">
+                <div class="checkout__form profile-content">
 
                     <h4 class="mb-4">Edit Profile Information</h4>
 
-                    <form asp-action="Edit" method="post" class="contact__form">
+                    @if (TempData["Success"] != null)
+                    {
+                        <div class="alert alert-success">@TempData["Success"]</div>
+                    }
+
+                    <form asp-controller="Profile" asp-action="Edit" method="post">
+
+                        <!-- En kritik düzeltme -->
+                        <input type="hidden" name="Email" value="@Model.Email" />
 
                         <div class="row">
 
-                            <div class="col-lg-6">
-                                <input asp-for="FullName" placeholder="Full Name" />
-                                <span asp-validation-for="FullName" class="text-danger"></span>
+                            <div class="col-md-6 mb-3">
+                                <label>Full Name</label>
+                                <input asp-for="FullName" class="form-control" />
+                                <span asp-validation-for="FullName" class="text-danger small"></span>
                             </div>
 
-                            <div class="col-lg-6">
-                                <input asp-for="Email" placeholder="Email" />
-                                <span asp-validation-for="Email" class="text-danger"></span>
+                            <div class="col-md-6 mb-3">
+                                <label>Email</label>
+                                <div class="profile__info-box">@Model.Email</div>
                             </div>
 
-                            <div class="col-lg-6">
-                                <input asp-for="Phone" placeholder="Phone" />
-                                <span asp-validation-for="Phone" class="text-danger"></span>
+                            <div class="col-md-6 mb-3">
+                                <label>Phone</label>
+                                <input asp-for="Phone" class="form-control" />
+                                <span asp-validation-for="Phone" class="text-danger small"></span>
                             </div>
 
-                            <div class="col-lg-6">
-                                <input asp-for="City" placeholder="City" />
-                                <span asp-validation-for="City" class="text-danger"></span>
+                            <div class="col-md-6 mb-3">
+                                <label>Zip Code</label>
+                                <input asp-for="ZipCode" class="form-control" />
+                                <span asp-validation-for="ZipCode" class="text-danger small"></span>
                             </div>
 
-                            <div class="col-lg-12">
-                                <input asp-for="Address" placeholder="Address" />
-                                <span asp-validation-for="Address" class="text-danger"></span>
+                            <div class="col-md-12 mb-3">
+                                <label>Address</label>
+                                <input asp-for="Address" class="form-control" />
+                                <span asp-validation-for="Address" class="text-danger small"></span>
                             </div>
 
-                            <div class="col-lg-12">
-                                <input asp-for="ZipCode" placeholder="Zip Code" />
-                                <span asp-validation-for="ZipCode" class="text-danger"></span>
+                            <div class="col-md-12 mb-3">
+                                <label>City</label>
+                                <input asp-for="City" class="form-control" />
+                                <span asp-validation-for="City" class="text-danger small"></span>
                             </div>
 
-                            <div class="col-lg-12 text-center mt-3">
+                            <div class="col-md-12 text-end mt-4">
                                 <button type="submit" class="site-btn">Save Changes</button>
                             </div>
 
@@ -92,6 +86,46 @@
         </div>
     </div>
 </section>
+
+
+<style>
+    .profile-section {
+        padding-top: 30px !important;
+        padding-bottom: 60px;
+    }
+
+    .profile-sidebar {
+        margin-top: 0;
+    }
+
+    .profile-content {
+        margin-top: 0;
+    }
+
+    .form-control {
+        background: #f8f8f8;
+        padding: 12px 15px;
+        border-radius: 5px;
+        border: 1px solid #ebebeb;
+        font-size: 15px;
+        color: #333;
+    }
+
+    /* Sidebar menu (Details ile aynı renk ve stil) */
+    .profile-menu li {
+       /*  padding: 12px 0; */
+        font-size: 15px;
+    }
+
+        .profile-menu li a {
+            color: #111; /* mavi değil, Details ile aynı */
+            text-decoration: none;
+        }
+
+            .profile-menu li a:hover {
+                color: #7fad39;
+            }
+</style>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

@@ -1,117 +1,90 @@
-﻿using ECommerceWeb.MVC.Models;
+﻿using ECommerceWeb.MVC.Models.AuthViewModels;
 using ECommerceWeb.MVC.Models.HomeViewModels;
+using ECommerceWeb.MVC.Models.OrderviewModels;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace ECommerceWeb.MVC.Controllers
 {
     public class ProfileController : Controller
     {
-        // Session key tanımları: Session'da tutmak istediğimiz verilerin anahtar isimleri
-        // -------------------------------------------------------------------
-        private const string SessionUserKey = "UserInfo";   // UserInformation modelinin JSON hali
-        private const string SessionOrderKey = "LastOrder"; // Son sipariş JSON verisi
+        // Session keys
+        private const string SessionUserKey = "UserInfo";
+        private const string SessionOrderKey = "LastOrder"; // Last order JSON
 
-        // HEADER ÜSTÜ KULLANICI BİLGİLERİ
-        // Amaç:
-        // Kullanıcının giriş yapıp yapmadığını anlamak
-        // Header’da (layout'ta) kullanıcı adı ve email'in dinamik görünmesini sağlamak
-        // -------------------------------------------------------------------
-        private void SetUserToViewBag()
+        private bool CheckLogin() => HttpContext.Session.GetString(SessionUserKey) != null;
+
+        private UserInformation GetUserFromSession()
         {
             var userJson = HttpContext.Session.GetString(SessionUserKey);
+            return string.IsNullOrEmpty(userJson) ? null : JsonSerializer.Deserialize<UserInformation>(userJson);
+        }
 
-            // Eğer kullanıcı giriş yapmışsa Session içerisinde UserInformation JSON bulunur
-            if (!string.IsNullOrEmpty(userJson))
+        private void SaveUserToSession(UserInformation user)
+        {
+            HttpContext.Session.SetString(SessionUserKey, JsonSerializer.Serialize(user));
+        }
+
+        private void SetUserToViewBag(UserInformation user)
+        {
+            if (user != null)
             {
-                // Session'daki JSON verisini UserInformation modeline çeviriyoruz
-                var user = JsonSerializer.Deserialize<UserInformation>(userJson);
-
-                // ViewBag ile tüm view’lara kullanıcı bilgisi taşıyoruz
                 ViewBag.Username = user.FullName;
                 ViewBag.Email = user.Email;
             }
-            else
-            {
-                // Giriş yapılmamışsa header'da login/register görünür
-                ViewBag.Username = null;
-                ViewBag.Email = null;
-            }
         }
 
+        private void SetUserToViewBag() => SetUserToViewBag(GetUserFromSession());
 
-        // LOGIN KONTROLÜ
-        // Amaç:
-        // Kullanıcı giriş yapmamışsa Profile sayfalarına erişimi engellemek
-        // -------------------------------------------------------------------
-        private bool CheckLogin()
-        {
-            return HttpContext.Session.GetString(SessionUserKey) != null;
-        }
-
-
-        //  PROFILE → DETAILS (Kullanıcı bilgilerini görüntüleme)
-        // -------------------------------------------------------------------
+        // ---------------- DETAILS ----------------
         [Route("profile")]
         [Route("profile/details")]
         public IActionResult Details()
         {
-            // Eğer kullanıcı giriş yapmamışsa login sayfasına yönlendiriyoruz
-            if (!CheckLogin())
-                return RedirectToAction("Login", "Auth");
+            if (!CheckLogin()) return RedirectToAction("Login", "Auth");
 
-            SetUserToViewBag();
-
-            // Session’daki JSON veriyi alıp modele dönüştürüyoruz
-            var userJson = HttpContext.Session.GetString(SessionUserKey);
-            var user = JsonSerializer.Deserialize<UserInformation>(userJson);
-
-            // Modeli view’a gönderiyoruz
+            var user = GetUserFromSession();
+            ViewBag.PageTitle = "My Profile";
             return View(user);
         }
 
-        //  PROFILE → EDIT (GET) — profil bilgileri düzenleme formu
-        //-------------------------------------------------------------------
+        // ---------------- EDIT GET ----------------
         [Route("profile/edit")]
         public IActionResult Edit()
         {
-            if (!CheckLogin())
-                return RedirectToAction("Login", "Auth");
+            if (!CheckLogin()) return RedirectToAction("Login", "Auth");
 
-            SetUserToViewBag();
-
-            // Formun default olarak kullanıcı bilgileriyle dolu gelmesi için
-            var userJson = HttpContext.Session.GetString(SessionUserKey);
-            var user = JsonSerializer.Deserialize<UserInformation>(userJson);
-
+            var user = GetUserFromSession();
+            ViewBag.PageTitle = "Edit Profile";
             return View(user);
         }
 
-
-        //  PROFILE → EDIT (POST) — düzenlenen bilgileri kaydetme
-        // -------------------------------------------------------------------
+        // ---------------- EDIT POST ----------------
         [HttpPost]
         [Route("profile/edit")]
         public IActionResult Edit(UserInformation model)
         {
-            // Eğer validation hatası varsa aynı formu hata mesajlarıyla tekrar gösterir
-            if (!ModelState.IsValid)
-            {
-                SetUserToViewBag();
-                return View(model);
-            }
+            // Clear any previous ModelState errors
+            ModelState.Clear(); //!!!  sadece “view’e eski değer gelmesin” diye kullandık denemek için, validation çözmek için değil.
 
-            // Kullanıcı bilgilerini Session’a JSON olarak kaydeder
-            HttpContext.Session.SetString(SessionUserKey, JsonSerializer.Serialize(model));
+            var existing = GetUserFromSession();
+            if (existing == null)
+                return RedirectToAction("Login", "Auth");
 
-            // Başarılı güncelleme mesajı
+            // Keep email and password intact
+            model.Email = existing.Email;
+            model.Password = existing.Password;
+
+            // Save updated data to session
+            SaveUserToSession(model);
+
             TempData["Success"] = "Profile updated successfully.";
 
             return RedirectToAction("Details");
         }
 
-        //  PROFILE → MY ORDERS — kullanıcı sipariş geçmişi
-        // -------------------------------------------------------------------
+        // ---------------- MY ORDERS ----------------
         [Route("profile/my-orders")]
         public IActionResult MyOrders()
         {
@@ -120,23 +93,25 @@ namespace ECommerceWeb.MVC.Controllers
 
             SetUserToViewBag();
 
-            // Son siparişi Session’dan alıyoruz
-            var orderJson = HttpContext.Session.GetString(SessionOrderKey);
+            var orderJson = HttpContext.Session.GetString("Orders");
+            List<Order> orders;
 
-            // Hiç sipariş yoksa sayfada mesaj gösterebilmek için ViewBag kullanıyoruz
             if (string.IsNullOrEmpty(orderJson))
             {
+                orders = new List<Order>();
                 ViewBag.Empty = true;
-                return View();
+            }
+            else
+            {
+                orders = JsonSerializer.Deserialize<List<Order>>(orderJson);
+                ViewBag.Empty = orders.Count == 0;
             }
 
-            // Sipariş bulunduysa modele dönüştürüp view’e gönderiyoruz
-            var order = JsonSerializer.Deserialize<Order>(orderJson);
-            return View(order);
+            ViewBag.PageTitle = "My Orders";
+            return View(orders);
         }
 
-        //  PROFILE → MY PRODUCTS — satıcı ürünleri (DEMO veri)
-        // -------------------------------------------------------------------
+        // ---------------- MY PRODUCTS ----------------
         [Route("profile/my-products")]
         public IActionResult MyProducts()
         {
@@ -145,7 +120,6 @@ namespace ECommerceWeb.MVC.Controllers
 
             SetUserToViewBag();
 
-            // Demo ürün listesi — veritabanı olmadığı için statik data kullandık
             var products = new List<ProductListingModel>
             {
                 new ProductListingModel { Id = 1, Name = "Organic Banana", ImageUrl="/img/product/product-1.jpg", Category="Fruits", Price=20, OldPrice=25 },
@@ -153,6 +127,7 @@ namespace ECommerceWeb.MVC.Controllers
                 new ProductListingModel { Id = 3, Name = "Natural Honey", ImageUrl="/img/product/product-3.jpg", Category="Organic", Price=45 }
             };
 
+            ViewBag.PageTitle = "My Products";
             return View(products);
         }
     }
