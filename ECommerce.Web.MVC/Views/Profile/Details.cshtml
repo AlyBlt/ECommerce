@@ -1,5 +1,83 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model ECommerceWeb.MVC.Models.UserInformation
 @{
+    ViewData["Title"] = "My Profile";
 }
+
+<!-- Breadcrumb Section Begin -->
+<section class="breadcrumb-section set-bg" data-setbg="~/img/breadcrumb.jpg">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <div class="breadcrumb__text">
+                    <h2>My Profile</h2>
+                    <div class="breadcrumb__option">
+                        <a href="/">Home</a>
+                        <span>Profile Details</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- Breadcrumb Section End -->
+
+<section class="contact spad">
+    <div class="container">
+        <div class="row">
+
+            <!-- Menü -->
+            <div class="col-lg-4 col-md-5">
+                <div class="contact__sidebar">
+                    <h4>Account Menu</h4>
+                    <ul>
+                        <li><a href="/profile/details">My Profile</a></li>
+                        <li><a href="/profile/edit">Edit Profile</a></li>
+                        <li><a href="/profile/my-orders">My Orders</a></li>
+                        <li><a href="/profile/my-products">My Products</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Profil Bilgileri -->
+            <div class="col-lg-8 col-md-7">
+                <div class="contact__content">
+
+                    <h4 class="mb-4">Profile Information</h4>
+
+                    <div class="row mb-3">
+                        <div class="col-sm-4 font-weight-bold">Full Name:</div>
+                        <div class="col-sm-8">@Model.FullName</div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-sm-4 font-weight-bold">Email:</div>
+                        <div class="col-sm-8">@Model.Email</div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-sm-4 font-weight-bold">Phone:</div>
+                        <div class="col-sm-8">@Model.Phone</div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-sm-4 font-weight-bold">Address:</div>
+                        <div class="col-sm-8">@Model.Address</div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-sm-4 font-weight-bold">City:</div>
+                        <div class="col-sm-8">@Model.City</div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-sm-4 font-weight-bold">Zip Code:</div>
+                        <div class="col-sm-8">@Model.ZipCode</div>
+                    </div>
+
+                    <a href="/profile/edit" class="site-btn mt-4">Edit Profile</a>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
