@@ -1,0 +1,96 @@
+﻿@model List<ECommerceWeb.MVC.Models.FavoritesViewModels.FavoriteItem>
+
+<section class="shoping-cart spad">
+    <div class="container">
+
+        <h2 class="mb-4">My Favorites</h2>
+
+        @if (Model.Any())
+        {
+            <div class="shoping__cart__table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="shoping__product">Product</th>
+                            <th>Price</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="shoping__cart__item d-flex align-items-center">
+                                    <img src="@item.ImageUrl"
+                                         alt="@item.Name"
+                                         class="me-3"
+                                         style="width:70px; height:70px; object-fit:cover;" />
+                                    <h5 class="m-0">@item.Name</h5>
+                                </td>
+
+                                <td class="shoping__cart__price">
+                                    @item.Price ₺
+                                </td>
+
+                                <td class="shoping__cart__item__close">
+                                    <form asp-controller="Favorites"
+                                          asp-action="Remove"
+                                          method="post">
+                                        <input type="hidden" name="productId" value="@item.ProductId" />
+                                        <button type="submit" class="primary-btn btn-sm">
+                                            Remove
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="shoping__cart__btns mt-4 d-flex justify-content-between">
+
+                <!-- BACK -->
+                <a asp-controller="Home" asp-action="Listing" class="primary-btn cart-btn">
+                    ← Back to Shop
+                </a>
+
+                <!-- GO TO CART -->
+                <form asp-controller="Cart" asp-action="AddFavoritesToCart" method="post" class="go-to-cart-form">
+                    <button type="submit" class="primary-btn cart-btn">Go to Cart →</button>
+                </form>
+
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">Your favorites list is empty.</p>
+
+            <a asp-controller="Home" asp-action="Listing" class="primary-btn mt-3">
+                ← Back to Shop
+            </a>
+        }
+
+    </div>
+</section>
+
+@section Styles {
+    <style>
+        /* "Go to Cart" button’un border’ını kaldır */
+        .go-to-cart-form button {
+            border: none;
+        }
+
+        /* Tablo yazı boyutunu biraz küçült */
+        .shoping__cart__table table {
+            font-size: 0.9rem;
+        }
+
+        /* Remove butonun renk ve stilini Ogani template ile uyumlu yap */
+        .shoping__cart__item__close .primary-btn {
+            padding: 4px 10px;
+            font-size: 0.85rem;
+        }
+    </style>
+}

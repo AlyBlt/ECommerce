@@ -1,3 +1,13 @@
-﻿@{
+﻿@* // _OganiLayout veya _Header.cshtml render edilmeden önce *@
+@{
+    var cart = ECommerceWeb.MVC.Helpers.SessionHelper.GetCart(Context); // Session'dan cart
+    ViewBag.CartTotal = cart?.TotalPrice ?? 0;
+    ViewBag.CartCount = cart?.Items.Count ?? 0;
+
+    var favorites = ECommerceWeb.MVC.Helpers.SessionHelper.GetFavorites(Context);
+    ViewBag.FavoritesCount = favorites?.Count ?? 0;
+}
+
+@{
     Layout = "_OganiLayout";
 }

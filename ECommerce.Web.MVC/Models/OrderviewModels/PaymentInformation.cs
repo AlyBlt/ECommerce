@@ -1,10 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace ECommerceWeb.MVC.Models
+namespace ECommerceWeb.MVC.Models.OrderviewModels
 {
     public class PaymentInformation
     {
-        [Required(ErrorMessage = "Ödeme yöntemi seçilmelidir.")]
+        [Required(ErrorMessage = "Payment method is required.")]
         public string PaymentMethod { get; set; }
     }
 }

@@ -20,3 +20,17 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+/* Cart sayfasýndaki tablo ve genel yazýlarý küçült */
+.shoping-cart {
+    font-size: 14px; 
+}
+
+    .shoping-cart h2 {
+        font-size: 18px; 
+    }
+
+    .shoping-cart table th,
+    .shoping-cart table td {
+        font-size: 13px; 
+    }

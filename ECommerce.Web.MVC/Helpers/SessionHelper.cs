@@ -1,34 +1,60 @@
-﻿using ECommerceWeb.MVC.Models;
-using System.Text.Json;
+﻿using Newtonsoft.Json;
+using Microsoft.AspNetCore.Http;
+using System.Collections.Generic;
+using ECommerceWeb.MVC.Models.FavoritesViewModels;
+using ECommerceWeb.MVC.Models.CartViewModels;
 
 namespace ECommerceWeb.MVC.Helpers
 {
-    //Bu metot veritabanı kullanımına kadar order ları tutmak için yapıldı. Order ve Cart Controllerlarda kullanılıyor.
+    // Bu metot, sepet ve favoriler için session yönetimini sağlar
     public static class SessionHelper
     {
-        private const string SessionCartKey = "CartSession";
+        // Sepet için kullanılan session anahtarını tanımlıyoruz
+        private const string SessionCartKey = "Cart";  // Anahtarı "Cart" olarak sabitliyoruz
+        private const string SessionFavoritesKey = "Favorites"; // Favoriler için session anahtarı
 
-        public static Cart GetCart(HttpContext context)
+        // Sepet session'ını almak (varsa)
+        public static Cart GetCart(HttpContext httpContext)
         {
-            var cartJson = context.Session.GetString(SessionCartKey);
-            if (cartJson != null)
-            {
-                var cart = JsonSerializer.Deserialize<Cart>(cartJson);
-                if (cart.Items == null) cart.Items = new List<CartItem>();
-                return cart;
-            }
-            return new Cart(); // boş liste ile dön
+            var cart = httpContext.Session.GetString(SessionCartKey); // Sepet anahtarını buradan alıyoruz
+            if (string.IsNullOrEmpty(cart))
+                return new Cart(); // Eğer sepet boşsa yeni bir Cart döndür
+            return JsonConvert.DeserializeObject<Cart>(cart); // Sepet bilgilerini deserialize ediyoruz
         }
 
-        public static void SaveCart(HttpContext context, Cart cart)
+        // Sepet session'ını kaydetmek (varsa)
+        public static void SaveCart(HttpContext httpContext, Cart cart)
         {
-            var cartJson = JsonSerializer.Serialize(cart);
-            context.Session.SetString(SessionCartKey, cartJson);
+            var serializedCart = JsonConvert.SerializeObject(cart); // Sepeti serialize ediyoruz
+            httpContext.Session.SetString(SessionCartKey, serializedCart); // Sepeti session'a kaydediyoruz
         }
 
-        public static void ClearCart(HttpContext context)
+        // Sepet session'ını temizlemek
+        public static void ClearCart(HttpContext httpContext)
         {
-            context.Session.Remove(SessionCartKey);
+            httpContext.Session.Remove(SessionCartKey); // Sepet session'ını temizliyoruz
+        }
+
+        // Favoriler session'ını almak
+        public static List<FavoriteItem> GetFavorites(HttpContext httpContext)
+        {
+            var favorites = httpContext.Session.GetString(SessionFavoritesKey); // Favoriler anahtarını buradan alıyoruz
+            if (string.IsNullOrEmpty(favorites))
+                return new List<FavoriteItem>(); // Eğer favoriler boşsa yeni bir liste döndür
+            return JsonConvert.DeserializeObject<List<FavoriteItem>>(favorites); // Favoriler bilgilerini deserialize ediyoruz
+        }
+
+        // Favoriler session'ını kaydetmek
+        public static void SaveFavorites(HttpContext httpContext, List<FavoriteItem> favorites)
+        {
+            var serializedFavorites = JsonConvert.SerializeObject(favorites); // Favorileri serialize ediyoruz
+            httpContext.Session.SetString(SessionFavoritesKey, serializedFavorites); // Favorileri session'a kaydediyoruz
+        }
+
+        // Favoriler session'ını temizlemek (Eğer gereksizse)
+        public static void ClearFavorites(HttpContext httpContext)
+        {
+            httpContext.Session.Remove(SessionFavoritesKey); // Favoriler session'ını temizliyoruz
         }
     }
 }

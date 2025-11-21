@@ -1,4 +1,4 @@
-﻿namespace ECommerceWeb.MVC.Models
+﻿namespace ECommerceWeb.MVC.Models.CartViewModels
 {
     // Sepet sınıfı: Kullanıcının sepete eklediği ürünleri tutar
     public class Cart
