@@ -1,0 +1,28 @@
+﻿@model ECommerceWeb.MVC.Models.HomeViewModels.ProductListingModel
+@{
+    ViewData["Title"] = "Create Product";
+}
+
+<section class="contact-form spad">
+    <div class="container">
+        <h2>Create Product</h2>
+        <form asp-action="Create" method="post">
+            <div class="form-group">
+                <input type="text" class="form-control" name="Name" placeholder="Product Name" required />
+            </div>
+            <div class="form-group">
+                <input type="text" class="form-control" name="Category" placeholder="Category" required />
+            </div>
+            <div class="form-group">
+                <input type="number" class="form-control" name="Price" placeholder="Price" required />
+            </div>
+            <div class="form-group">
+                <input type="number" class="form-control" name="OldPrice" placeholder="Old Price (if on sale)" />
+            </div>
+            <div class="form-group">
+                <input type="text" class="form-control" name="ImageUrl" placeholder="Image URL" required />
+            </div>
+            <button type="submit" class="site-btn">Create</button>
+        </form>
+    </div>
+</section>
