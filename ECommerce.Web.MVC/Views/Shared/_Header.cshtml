@@ -1,4 +1,8 @@
 ﻿<!-- Header Section Begin -->     @* Controller/Actionlara göre düzenlenecek, Menu linkleri doğru actionlara bağlanacak *@
+@{
+    ViewBag.CartCount = Context.Session.GetInt32("CartCount") ?? 0;
+    ViewBag.FavoritesCount = Context.Session.GetInt32("FavoritesCount") ?? 0;
+}
 <header class="header">
     <!-- Header Top Begin -->
     <div class="header__top">
@@ -78,10 +82,24 @@
             <div class="col-lg-3 col-md-3 col-sm-6">
                 <div class="header__cart">
                     <ul>
-                        <li><a href="/Wishlist"><i class="fa fa-heart"></i> <span>1</span></a></li>
-                        <li><a href="/Cart"><i class="fa fa-shopping-bag"></i> <span>3</span></a></li>
+                        @* <li><a href="/Wishlist"><i class="fa fa-heart"></i> <span>1</span></a></li> *@
+                        <li>
+                            <a asp-controller="Favorites" asp-action="Index" id="header-favorites-link">
+                                <i class="fa fa-heart"></i>
+                                <span id="header-favorites-count">@(ViewBag.FavoritesCount ?? 0)</span>
+                            </a>
+                        </li>
+                       @*  <li><a href="/Cart"><i class="fa fa-shopping-bag"></i> <span>3</span></a></li> *@
+                        <li>
+                            <a asp-controller="Cart" asp-action="Index">
+                                <i class="fa fa-shopping-bag"></i>
+                                <span>@(ViewBag.CartCount ?? 0)</span>
+                            </a>
+                        </li>
                     </ul>
-                    <div class="header__cart__price">item: <span>$150.00</span></div>
+                    <div class="header__cart__price">
+                        item: <span>@ViewBag.CartTotal ₺</span>
+                    </div>
                 </div>
             </div>
         </div>

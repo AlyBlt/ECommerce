@@ -1,4 +1,5 @@
-﻿using ECommerceWeb.MVC.Models;
+﻿using ECommerceWeb.MVC.Models.CartViewModels;
+using ECommerceWeb.MVC.Models.OrderviewModels;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
@@ -6,35 +7,34 @@ namespace ECommerceWeb.MVC.Controllers
 {
     public class OrderController : Controller
     {
-        // Session anahtarları
-        private const string SessionCartKey = "CartSession";  // Sepet bilgileri için
-        private const string SessionOrderKey = "LastOrder";  // Son sipariş bilgisi için
+        // Session keys
+        private const string SessionCartKey = "CartSession";  // For cart information
+        private const string SessionOrderKey = "LastOrder";  // For last order information
 
-        // Sepeti session'dan alır
+        // Retrieve cart from session
         private Cart GetCart()
         {
-            var json = HttpContext.Session.GetString(SessionCartKey);  // Session'dan json stringi al
+            var json = HttpContext.Session.GetString(SessionCartKey);  // Get JSON string from session
             if (string.IsNullOrEmpty(json))
-                return new Cart();  // Sepet yoksa boş sepet döndür
+                return new Cart();  // Return an empty cart if session is empty
 
-            // JSON'u Cart nesnesine dönüştür
+            // Deserialize the JSON into a Cart object
             return JsonSerializer.Deserialize<Cart>(json);
         }
 
-        // Kullanıcı bilgileri sayfası
+        // User information page
         [HttpGet]
         public IActionResult Create()
         {
-            // Sepeti kontrol et
+            // Check the cart
             var cartJson = HttpContext.Session.GetString("CartSession");
             var cart = string.IsNullOrEmpty(cartJson) ? new Cart() : JsonSerializer.Deserialize<Cart>(cartJson);
 
             if (cart.Items.Count == 0)
             {
-                TempData["Error"] = "Sepetiniz boş. Ödeme sayfasına geçemezsiniz!";
-                return RedirectToAction("Test", "Cart"); // Sepet sayfasına yönlendir
+                TempData["Error"] = "Your cart is empty. You cannot proceed to the payment page!";
+                return RedirectToAction("Test", "Cart"); // Redirect to the cart page
             }
-
 
             return View(new UserInformation());
         }
@@ -42,46 +42,46 @@ namespace ECommerceWeb.MVC.Controllers
         [HttpPost]
         public IActionResult Create(UserInformation model)
         {
-            // Form doğrulaması başarısızsa tekrar göster
+            // If form validation fails, show the form again
             if (!ModelState.IsValid)
                 return View(model);
 
-            // Kullanıcı bilgilerini session'a kaydet (JSON formatında)
+            // Save user information to session (in JSON format)
             HttpContext.Session.SetString("UserInfo", JsonSerializer.Serialize(model));
 
-            // Ödeme sayfasına yönlendir
+            // Redirect to the payment page
             return RedirectToAction("Payment");
         }
 
-        // Ödeme yöntemi seçimi
+        // Payment method selection page
         [HttpGet]
         public IActionResult Payment()
         {
-            // Boş PaymentInformation modeli ile ödeme formunu göster
+            // Show the payment form with an empty PaymentInformation model
             return View(new PaymentInformation());
         }
 
         [HttpPost]
         public IActionResult Payment(PaymentInformation model)
         {
-            // Ödeme yöntemi seçilmemişse hata mesajı göster
+            // If payment method is not selected, show an error message
             if (model.PaymentMethod == null)
             {
-                ModelState.AddModelError("", "Ödeme yöntemi seçmelisiniz.");
+                ModelState.AddModelError("", "You must select a payment method.");
                 return View(model);
             }
 
-            // Kullanıcı bilgilerini session'dan al
+            // Retrieve user information from session
             var userJson = HttpContext.Session.GetString("UserInfo");
             var userInfo = JsonSerializer.Deserialize<UserInformation>(userJson);
 
-            // Sepet bilgilerini al
+            // Get the cart information
             var cart = GetCart();
 
-            // Sipariş nesnesini oluştur
+            // Create an order object
             var order = new Order
             {
-                Id = new Random().Next(100000, 999999), // rastgele sipariş numarası
+                Id = new Random().Next(100000, 999999), // Random order number
                 UserInformation = userInfo,
                 Items = cart.Items.Select(x => new OrderItem
                 {
@@ -93,28 +93,28 @@ namespace ECommerceWeb.MVC.Controllers
                 PaymentMethod = model.PaymentMethod
             };
 
-            // Siparişi session'a kaydet
+            // Save the order to session
             HttpContext.Session.SetString(SessionOrderKey, JsonSerializer.Serialize(order));
 
-            // Sepeti temizle (sipariş oluşturulduktan sonra)
+            // Clear the cart (after creating the order)
             cart.Clear();
             HttpContext.Session.SetString(SessionCartKey, JsonSerializer.Serialize(cart));
 
-            // Sipariş detayları sayfasına yönlendir
+            // Redirect to the order details page
             return RedirectToAction("Details");
         }
 
-        // Sipariş Detayları sayfası
+        // Order details page
         [HttpGet]
         public IActionResult Details()
         {
-            // Son siparişi session'dan al
+            // Retrieve the last order from session
             var json = HttpContext.Session.GetString(SessionOrderKey);
-            // Eğer sipariş yoksa ana sayfaya yönlendir
+            // If no order exists, redirect to the homepage
             if (json == null)
                 return RedirectToAction("Index", "Home");
 
-            // JSON'u Order nesnesine dönüştür ve view'a gönder
+            // Deserialize the JSON into an Order object and send it to the view
             var order = JsonSerializer.Deserialize<Order>(json);
             return View(order);
         }

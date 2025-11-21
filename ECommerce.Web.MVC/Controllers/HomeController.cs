@@ -1,3 +1,4 @@
+using ECommerceWeb.MVC.Helpers;
 using ECommerceWeb.MVC.Models;
 using ECommerceWeb.MVC.Models.HomeViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -50,6 +51,9 @@ namespace ECommerce.Web.MVC.Controllers
                 new ProductListingModel { Id = 2, Name = "Vegetables’ Package", Category = "Vegetables", ImageUrl="/img/product/product-2.jpg", Price=30 },
                 new ProductListingModel { Id = 3, Name = "Mixed Fruits", Category = "Dried Fruit", ImageUrl="/img/product/product-3.jpg", Price=30, OldPrice=36 }
             };
+
+            // Products listesini session’a kaydet
+            HttpContext.Session.SetObjectAsJson("Products", products);
 
             return View(products);
 
