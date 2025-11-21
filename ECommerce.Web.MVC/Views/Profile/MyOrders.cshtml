@@ -1,0 +1,109 @@
+﻿@model List<ECommerceWeb.MVC.Models.OrderviewModels.Order>
+
+@{
+    ViewData["Title"] = "My Orders";
+    var user = ViewBag.User as ECommerceWeb.MVC.Models.OrderviewModels.UserInformation;
+}
+<section class="checkout profile-section">
+    <div class="container">
+        <div class="row">
+
+            <!-- LEFT MENU -->
+            <div class="col-lg-4 col-md-4">
+                <div class="checkout__order profile-sidebar">
+                    <h4>Account Menu</h4>
+                    <ul class="list-group list-group-flush profile-menu">
+                        <li class="list-group-item"><a href="/profile/details">My Profile</a></li>
+                        <li class="list-group-item"><a href="/profile/edit">Edit Profile</a></li>
+                        <li class="list-group-item"><a href="/profile/my-orders" class="active">My Orders</a></li>
+                        <li class="list-group-item"><a href="/profile/my-products">My Products</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- RIGHT CONTENT -->
+            <div class="col-lg-8 col-md-8">
+                <div class="checkout__form profile-content">
+
+                    <h4 class="mb-4">My Orders</h4>
+
+                    @if (ViewBag.Empty == true)
+                    {
+                        <div class="alert alert-info alert-dismissible" role="alert">
+                            No orders found.
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var order in Model)
+                        {
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5>Order #@order.Id</h5>
+                                    <p><strong>Payment Method:</strong> @order.PaymentMethod</p>
+
+                                    <table class="table table-bordered mb-2">
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Price</th>
+                                                <th>Qty</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var item in order.Items)
+                                            {
+                                                <tr>
+                                                    <td>@item.Name</td>
+                                                    <td>$@item.Price</td>
+                                                    <td>@item.Quantity</td>
+                                                    <td>$@item.TotalPrice</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                    <p class="text-right"><strong>Total:</strong> $@order.TotalPrice</p>
+                                </div>
+                            </div>
+                        }
+                    }
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<style>
+    .profile-section {
+        padding-top: 30px !important;
+        padding-bottom: 60px;
+    }
+
+    .profile-sidebar {
+        margin-top: 0;
+    }
+
+    .profile-content {
+        margin-top: 0;
+    }
+
+    .profile-menu li {
+       /*  padding: 12px 0; */
+        font-size: 15px;
+    }
+
+        .profile-menu li a {
+            color: #111;
+            text-decoration: none;
+        }
+
+            .profile-menu li a:hover {
+                color: #7fad39;
+            }
+</style>

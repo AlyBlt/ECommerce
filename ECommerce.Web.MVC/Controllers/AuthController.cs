@@ -1,117 +1,112 @@
-﻿using AspNetCoreGeneratedDocument;
-using ECommerceWeb.MVC.Models.AuthViewModels;
+﻿using ECommerceWeb.MVC.Models.AuthViewModels;
+using ECommerceWeb.MVC.Models.OrderviewModels;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace ECommerceWeb.MVC.Controllers
 {
-    //GENEL NOT: ALİYE -- Veritabanı olmadığı için en azından test edebilmek adına model kullanarak session/cache ile geçici hafızayla yaptım.
-    //Modeller daha sonra veritabanına geçince application katmanına aktarılır, daha kolaylık olur.
-    //Bu yöntem sadece demo/test amaçlı. Gerçek projelerde veritabanı ve güvenli şifreleme kullanmak şart tabi.
-    //Session ile sadece kullanıcı oturumunu saklayabiliriz; kayıt işlemi de şimdilik statik bir kullanıcı üzerinden test edilebilir.
     public class AuthController : Controller
     {
-        
+        private const string SessionUserKey = "UserInfo";
+
+        // Kayıt olan kullanıcılar burada tutulacak (demo)
+        public static List<UserInformation> Users = new List<UserInformation>();
+
+        private bool CheckLogin() => HttpContext.Session.GetString(SessionUserKey) != null;
+
+        // GET: Login
         [Route("account/login")]
         public IActionResult Login()
         {
+            if (CheckLogin())
+                return RedirectToAction("Details", "Profile");
+
             return View();
         }
 
-        //Session ile test için Login post eklendi
+        // POST: Login
         [HttpPost]
+        [Route("account/login")]
         public IActionResult Login(LoginViewModel model)
         {
-            if (ModelState.IsValid)
-            {
-                // Örnek: statik kullanıcı (username: test@test.com, password: 1234)
-                if (model.Email == "test@test.com" && model.Password == "1234")
-                {
-                    // Session’a kullanıcı bilgilerini kaydet
-                    HttpContext.Session.SetString("UserEmail", model.Email);
-                    HttpContext.Session.SetString("Username", "Test User");
+            if (!ModelState.IsValid)
+                return View(model);
 
-                    return RedirectToAction("Index", "Home");
-                }
-                else
-                {
-                    ModelState.AddModelError("", "Email veya şifre yanlış");
-                }
+            //  1) Önce kayıtlı kullanıcılar listesinde ara
+            var existingUser = AuthController.Users
+                .FirstOrDefault(u => u.Email == model.Email && u.Password == model.Password);
+
+            if (existingUser != null)
+            {
+                // kullanıcı bulundu → session'a yaz
+                HttpContext.Session.SetString(SessionUserKey, JsonSerializer.Serialize(existingUser));
+                return RedirectToAction("Details", "Profile");
             }
+
+            //  2) Demo user login
+            if (model.Email == "test@test.com" && model.Password == "1234")
+            {
+                var demoUser = new UserInformation
+                {
+                    FullName = "Test User",
+                    Email = model.Email,
+                    Password = model.Password
+                };
+
+                HttpContext.Session.SetString(SessionUserKey, JsonSerializer.Serialize(demoUser));
+                return RedirectToAction("Details", "Profile");
+            }
+
+            // 3) Hatalı giriş
+            ModelState.AddModelError("", "Incorrect email or password");
             return View(model);
         }
 
-
+        // GET: Register
         [Route("account/register")]
         public IActionResult Register()
         {
+            if (CheckLogin())
+                return RedirectToAction("Details", "Profile");
+
             return View();
         }
 
+        // POST: Register
         [HttpPost]
+        [Route("account/register")]
         public IActionResult Register(RegisterViewModel model)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
+                return View(model);
+
+            // Yeni kullanıcı oluştur
+            var user = new UserInformation
             {
-                // Demo amaçlı: session’a kullanıcı ekleme
-                HttpContext.Session.SetString("UserEmail", model.Email);
-                HttpContext.Session.SetString("Username", model.Username);
+                FullName = model.Username,
+                Email = model.Email,
+                Password = model.Password,
+                Phone = "555-123-4567",
+                Address = "Demo Address",
+                City = "Demo City",
+                ZipCode = "00000"
+            };
 
-                return RedirectToAction("Index", "Home");
-            }
-            return View(model);
+            // KULLANICIYI LİSTEYE EKLE
+            Users.Add(user);
+
+            // Giriş yapmış gibi session’a yaz
+            HttpContext.Session.SetString(SessionUserKey, JsonSerializer.Serialize(user));
+
+            return RedirectToAction("Details", "Profile");
         }
 
-
-
-        //forgotpassword yerine forgot-password yapıldı--ödevde “arama motoru dostu” URL’ler önerilmiş.
-        [Route("account/forgot-password")]
-        public IActionResult ForgotPassword()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        public IActionResult ForgotPassword(ForgotPasswordViewModel model)
-        {
-            if (ModelState.IsValid)
-            {
-                // Demo amaçlı: sadece session veya log
-                ViewBag.Message = $"Şifre sıfırlama talimatı {model.Email} adresine gönderildi.";
-            }
-            return View(model);
-        }
-
-        
-       
-        //Genellikle kullanıcıyı yönlendirir (RedirectToAction).
+        // Logout
         [Route("account/logout")]
         public IActionResult LogOut()
         {
-            //return RedirectToAction("Index", "Home");
-           
-            // Session temizle
             HttpContext.Session.Clear();
             return RedirectToAction("Login");
-            
         }
-
-        public IActionResult Details()
-        {
-            var email = HttpContext.Session.GetString("UserEmail");
-            var username = HttpContext.Session.GetString("Username");
-
-            if (string.IsNullOrEmpty(email))
-            {
-                return RedirectToAction("Login", "Auth");
-            }
-
-            ViewBag.Email = email;
-            ViewBag.Username = username;
-
-            return View();
-        }
-
-
-
     }
 }

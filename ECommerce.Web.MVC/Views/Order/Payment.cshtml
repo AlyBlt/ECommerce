@@ -5,46 +5,71 @@
     Layout = "~/Views/Shared/_OganiLayout.cshtml";
 }
 
-<!-- Breadcrumb -->
-<section class="breadcrumb-section set-bg" data-setbg="~/img/breadcrumb.jpg">
+
+
+<section class="checkout spad">
     <div class="container">
-        <div class="row">
-            <div class="col-lg-12 text-center">
-                <div class="breadcrumb__text">
-                    <h2>Create Order</h2>
-                    <div class="breadcrumb__option">
-                        <a href="/">Home</a>
-                        <span>Create Order</span>
-                    </div>
+        <div class="row justify-content-center">
+
+            <div class="col-lg-8 col-md-10">
+                <div class="checkout__form">
+
+                    <h4 class="mb-4">Select Payment Method</h4>
+
+                    @Html.ValidationSummary(false, "", new { @class = "text-danger mb-3" })
+
+                    <form asp-action="Payment" method="post">
+
+                        <div class="checkout__input__checkbox mb-3">
+                            <label>
+                                <input type="radio" asp-for="PaymentMethod" value="Credit Card" />
+                                Credit Card
+                                <span class="checkmark"></span>
+                            </label>
+                        </div>
+
+                        <div class="checkout__input__checkbox mb-3">
+                            <label>
+                                <input type="radio" asp-for="PaymentMethod" value="Cash on Delivery" />
+                                Cash on Delivery
+                                <span class="checkmark"></span>
+                            </label>
+                        </div>
+
+                        <div class="checkout__input__checkbox mb-3">
+                            <label>
+                                <input type="radio" asp-for="PaymentMethod" value="Bank Transfer" />
+                                Bank Transfer (EFT)
+                                <span class="checkmark"></span>
+                            </label>
+                        </div>
+
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="site-btn">Complete Order</button>
+                        </div>
+                    </form>
+
                 </div>
             </div>
+
         </div>
     </div>
 </section>
 
-<h2>Select Payment Method</h2>
-<form asp-action="Payment" method="post">
+<style>
+    .checkout__input__checkbox label {
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+    }
 
-    <div>
-        <label>
-            <input type="radio" name="PaymentMethod" value="Credit Card" /> Credit Card
-        </label>
-    </div>
-    <div>
-        <label>
-            <input type="radio" name="PaymentMethod" value="Cash on Delivery" /> Cash on Delivery
-        </label>
-    </div>
-    <div>
-        <label>
-            <input type="radio" name="PaymentMethod" value="Bank Transfer" /> Bank Transfer (EFT)
-        </label>
-    </div>
+    .checkout__input__checkbox input[type="radio"] {
+        margin-right: 10px;
+        transform: scale(1.2);
+        cursor: pointer;
+    }
 
-    <button type="submit" class="site-btn">Complete Order</button>
-</form>
-
-@if (!ViewData.ModelState.IsValid)
-{
-    <p class="text-danger">You must select a payment method.</p>
-}
+    .checkout__form h4 {
+        font-weight: 600;
+    }
+</style>

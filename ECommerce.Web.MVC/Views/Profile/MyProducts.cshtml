@@ -1,0 +1,104 @@
+﻿@model List<ECommerceWeb.MVC.Models.HomeViewModels.ProductListingModel>
+@using System.Text.Json
+@{
+    ViewData["Title"] = "My Products";
+
+    // Kullanıcıyı session’dan al
+    var userJson = Context.Session.GetString("UserInfo");
+    var user = string.IsNullOrEmpty(userJson)
+        ? null
+        : JsonSerializer.Deserialize<ECommerceWeb.MVC.Models.OrderviewModels.UserInformation>(userJson);
+}
+
+<section class="checkout profile-section">
+    <div class="container">
+        <div class="row">
+
+            <!-- LEFT MENU -->
+            <div class="col-lg-4 col-md-4">
+                <div class="checkout__order profile-sidebar">
+                    <h4>Account Menu</h4>
+                    <ul class="list-group list-group-flush profile-menu">
+                        <li class="list-group-item"><a href="/profile/details">My Profile</a></li>
+                        <li class="list-group-item"><a href="/profile/edit">Edit Profile</a></li>
+                        <li class="list-group-item"><a href="/profile/my-orders">My Orders</a></li>
+                        <li class="list-group-item"><a href="/profile/my-products" class="active">My Products</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- RIGHT -->
+            <div class="col-lg-8 col-md-8">
+                <div class="checkout__form profile-content">
+                    <h4 class="mb-4">My Products</h4>
+
+                    @if (!Model.Any())
+                    {
+                        <div class="alert alert-info">No products found.</div>
+                    }
+                    else
+                    {
+                        <div class="row">
+                            @foreach (var item in Model)
+                            {
+                                <div class="col-lg-6 col-md-6 col-sm-6 mb-4">
+                                    <div class="product__item">
+                                        <div class="product__item__pic set-bg" style="background-image: url('@item.ImageUrl'); height: 200px; background-size: cover; background-position: center;"></div>
+                                        <div class="product__item__text text-center mt-2">
+                                            <h6>@item.Name</h6>
+                                            <h5>
+                                                $@item.Price
+                                                @if (item.IsOnSale)
+                                                {
+                                                    <span class="text-danger"><del>$@item.OldPrice</del></span>
+                                                }
+                                            </h5>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<style>
+    .profile-section {
+        padding-top: 30px !important;
+        padding-bottom: 60px;
+    }
+
+    .profile-sidebar {
+        margin-top: 0;
+    }
+
+    .profile-content {
+        margin-top: 0;
+    }
+
+    .profile-menu li a {
+        color: #111;
+        text-decoration: none;
+        
+    }
+
+        .profile-menu li a:hover {
+            color: #7fad39;
+        }
+
+        /* Aktif sayfa linki siyah kalacak, yeşil olmasın */
+        .profile-menu li a.active {
+            color: #111;
+        }
+
+    .product__item {
+        border: 1px solid #ebebeb;
+        border-radius: 5px;
+        background: #f8f8f8;
+        padding: 10px;
+    }
+</style>

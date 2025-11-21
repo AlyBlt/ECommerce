@@ -39,7 +39,33 @@
                         </div>
                         <!-- Login -->
                         <div class="header__top__right__auth">
-                            <a href="/Account/Login"><i class="fa fa-user"></i> Login</a>    @* Login linki doğru controller olmalı/Account.Login *@
+                            <!-- Login/Logout -->
+                            @* Burada durum şu ödeme için mesela userinformation girince de login gibi algılıyor
+                            header da login olmuş gibi lougout ve isim çıkıyor--veritabanında bu çözülecek! *@
+                            @{
+                                var userJson = Context.Session.GetString("UserInfo");
+                                bool isLoggedIn = !string.IsNullOrEmpty(userJson);
+                                ECommerceWeb.MVC.Models.OrderviewModels.UserInformation user = null;
+
+                                if (isLoggedIn)
+                                {
+                                    user = System.Text.Json.JsonSerializer.Deserialize<ECommerceWeb.MVC.Models.OrderviewModels.UserInformation>(userJson);
+                                }
+                            }
+
+                            <div class="header__top__right__auth">
+                                @if (isLoggedIn)
+                                {
+                                    <a asp-controller="Auth" asp-action="LogOut">
+                                        <i class="fa fa-sign-out"></i> Logout
+                                    </a>
+                                    <span class="ml-2"><i class="fa fa-user"></i> @user.FullName</span>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Auth" asp-action="Login"><i class="fa fa-user"></i> Login</a>
+                                }
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -61,19 +87,23 @@
             <div class="col-lg-6 col-md-6 col-sm-6">
                 <nav class="header__menu">
                     <ul>
-                        <li class="active"><a asp-controller="Home" asp-action="Index">Home</a></li> @* Home anasayfa yönlendirmesi. *@ 
-                        <li><a asp-controller="Home" asp-action="Listing">Shop</a></li> @* Listing metodunun shop sekmesine yönlendirilmesi. *@
-                        <li>
+                        <li><a asp-controller="Home" asp-action="Index">Home</a></li>
+                        <li><a asp-controller="Home" asp-action="Listing">Shop</a></li>
+                        <li class="has-dropdown">
                             <a href="#">Pages</a>
-                            <ul class="header__menu__dropdown">   @* Üstte Pages sekmesi *@
-                                <li><a asp-controller="Home" asp-action="ProductDetail">Shop Details</a></li> @* Product Detail sayfasının yönlendirmesi. *@
-                                <li><a href="/Cart">Shopping Cart</a></li>
-                                <li><a href="/Checkout">Check Out</a></li>
-                                <li><a href="/Blog/Details">Blog Details</a></li>
+                            <ul class="header__menu__dropdown">
+                                @* <li><a asp-controller="Home" asp-action="ProductDetail">Shop Details</a></li> *@
+                                <li><a asp-controller="Cart" asp-action="Index">Shopping Cart</a></li>
+                                <li><a asp-controller="Favorites" asp-action="Index">Favorites</a></li>
+                               @*  <li><a asp-controller="Blog" asp-action="Details">Blog Details</a></li> *@  @* şimdilik boş ilerde eklenir *@
                             </ul>
                         </li>
-                        <li><a href="/Blog">Blog</a></li>
-                        <li><a asp-controller="Home" asp-action="Contact">Contact</a></li> @* Contact sayfasının yönlendirmesi. *@
+                        <li><a asp-controller="Home" asp-action="AboutUs">About Us</a></li>
+                        <li><a asp-controller="Home" asp-action="Contact">Contact</a></li>
+                        @if (isLoggedIn)
+                        {
+                            <li><a asp-controller="Profile" asp-action="Details">Profile</a></li>
+                        }
                     </ul>
                 </nav>
             </div>
@@ -113,3 +143,36 @@
 </header>
 <!-- Header Section End -->
 
+    <style>
+
+    .header__menu ul {
+        display: flex; /* Menü öğelerini yan yana hizalar */
+        gap: 10px;
+    }
+
+        .header__menu li a {
+    position: relative;
+    z-index: 2; /* üstte görünmesini sağlar */
+}
+/* Dropdown menü arka plan ve link renkleri */
+.header__menu .header__menu__dropdown {
+    background-color: #fff !important; /* Arka plan beyaz */
+    border: 1px solid #eee !important; /* Hafif çerçeve */
+}
+
+        .header__menu .header__menu__dropdown li a {
+            color: #333 !important;
+            padding: 10px 20px !important;
+            display: block !important;
+            transition: all 0.3s !important;
+            background-color: #a4c639 !important;
+            min-width: 150px; /* tüm kutular aynı genişlikte */
+            box-sizing: border-box;
+        }
+
+/* Hover rengi */
+.header__menu .header__menu__dropdown li a:hover {
+    background-color: #f4f4f4 !important; /* Açık gri */
+    color: #27ae60 !important; /* Tema yeşili */
+}
+    </style>

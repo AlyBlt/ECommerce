@@ -8,7 +8,7 @@ namespace ECommerceWeb.MVC.Controllers
     public class OrderController : Controller
     {
         // Session keys
-        private const string SessionCartKey = "CartSession";  // For cart information
+        private const string SessionCartKey = "Cart"; // CartController ile aynı key  // For cart information
         private const string SessionOrderKey = "LastOrder";  // For last order information
 
         // Retrieve cart from session
@@ -27,14 +27,14 @@ namespace ECommerceWeb.MVC.Controllers
         public IActionResult Create()
         {
             // Check the cart
-            var cartJson = HttpContext.Session.GetString("CartSession");
+            var cartJson = HttpContext.Session.GetString(SessionCartKey);
             var cart = string.IsNullOrEmpty(cartJson) ? new Cart() : JsonSerializer.Deserialize<Cart>(cartJson);
 
-            if (cart.Items.Count == 0)
-            {
-                TempData["Error"] = "Your cart is empty. You cannot proceed to the payment page!";
-                return RedirectToAction("Test", "Cart"); // Redirect to the cart page
-            }
+            //if (cart.Items.Count == 0)
+            //{
+            //    TempData["Error"] = "Your cart is empty. You cannot proceed to the payment page!";
+            //    return RedirectToAction("Index", "Cart"); // Redirect to the cart page
+            //}
 
             return View(new UserInformation());
         }
@@ -43,14 +43,16 @@ namespace ECommerceWeb.MVC.Controllers
         public IActionResult Create(UserInformation model)
         {
             // If form validation fails, show the form again
-            if (!ModelState.IsValid)
-                return View(model);
+            //if (!ModelState.IsValid)
+            //    return View(model);
+            // Clear any previous ModelState errors
+            ModelState.Clear();//!!!  sadece “view’e eski değer gelmesin” diye kullandık denemek için, validation çözmek için değil.
 
             // Save user information to session (in JSON format)
             HttpContext.Session.SetString("UserInfo", JsonSerializer.Serialize(model));
 
             // Redirect to the payment page
-            return RedirectToAction("Payment");
+            return RedirectToAction("Payment"); 
         }
 
         // Payment method selection page
@@ -64,6 +66,7 @@ namespace ECommerceWeb.MVC.Controllers
         [HttpPost]
         public IActionResult Payment(PaymentInformation model)
         {
+            
             // If payment method is not selected, show an error message
             if (model.PaymentMethod == null)
             {
@@ -77,6 +80,7 @@ namespace ECommerceWeb.MVC.Controllers
 
             // Get the cart information
             var cart = GetCart();
+            
 
             // Create an order object
             var order = new Order
@@ -106,6 +110,7 @@ namespace ECommerceWeb.MVC.Controllers
 
         // Order details page
         [HttpGet]
+        [Route("order-details")]
         public IActionResult Details()
         {
             // Retrieve the last order from session
