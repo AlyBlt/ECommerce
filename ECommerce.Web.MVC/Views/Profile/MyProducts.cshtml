@@ -1,5 +1,67 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model List<ECommerceWeb.MVC.Models.HomeViewModels.ProductListingModel>
 @{
+    ViewData["Title"] = "My Products";
 }
+
+<!-- Breadcrumb Section Begin -->
+<section class="breadcrumb-section set-bg" data-setbg="~/img/breadcrumb.jpg">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <div class="breadcrumb__text">
+                    <h2>My Products</h2>
+                    <div class="breadcrumb__option">
+                        <a href="/">Home</a>
+                        <span>Products</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- Breadcrumb Section End -->
+
+<section class="product spad">
+    <div class="container">
+        <div class="row">
+
+            <!-- Menü -->
+            <div class="col-lg-4 col-md-5">
+                <div class="contact__sidebar">
+                    <h4>Account Menu</h4>
+                    <ul>
+                        <li><a href="/profile/details">My Profile</a></li>
+                        <li><a href="/profile/edit">Edit Profile</a></li>
+                        <li><a href="/profile/my-orders">My Orders</a></li>
+                        <li><a href="/profile/my-products">My Products</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Ürün Listesi -->
+            <div class="col-lg-8 col-md-7">
+                <div class="row">
+
+                    @foreach (var item in Model)
+                    {
+                        <div class="col-lg-6 col-md-6 col-sm-6">
+                            <div class="product__item">
+                                <div class="product__item__pic set-bg" data-setbg="@item.ImageUrl"></div>
+                                <div class="product__item__text">
+                                    <h6>@item.Name</h6>
+                                    <h5>$@item.Price</h5>
+                                    @if (item.IsOnSale)
+                                    {
+                                        <span class="text-danger"><del>$@item.OldPrice</del></span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
