@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Text.Json;
 
-namespace ECommerceWeb.MVC.Helpers
+namespace ECommerce.Web.Mvc.Helpers
 {
     public static class SessionExtensions
     {

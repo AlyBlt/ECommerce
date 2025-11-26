@@ -1,4 +1,4 @@
-@model ECommerceWeb.MVC.Models.HomeViewModels.ProductDetailViewModel
+@model ECommerce.Application.ViewModels.ProductDetailViewModel
 @{
     ViewData["Title"] = Model.Name;
 }
@@ -99,13 +99,7 @@
                 <div class="product__details__pic">
                     <div class="product__details__pic__item">
                         <img class="product__details__pic__item--large"
-                             src="@Model.MainImageUrl" alt="@Model.Name">
-                    </div>
-                    <div class="product__details__pic__slider owl-carousel">
-                        @foreach (var img in Model.GalleryImages)
-                        {
-                            <img data-imgbigurl="@img" src="@img" alt="@Model.Name">
-                        }
+                             src="@Model.ImageUrl" alt="@Model.Name">
                     </div>
                 </div>
             </div>
@@ -156,8 +150,6 @@
 
                     <ul>
                         <li><b>Availability</b> <span>@Model.Availability</span></li>
-                        <li><b>Shipping</b> <span>@Model.Shipping</span></li>
-                        <li><b>Weight</b> <span>@Model.Weight</span></li>
                         <li>
                             <b>Share on</b>
                             <div class="share">
@@ -188,11 +180,6 @@
                             <div class="tab-pane active" id="tabs-1" role="tabpanel">
                                 <div class="product__details__tab__desc">
                                     <p>@Model.Description</p>
-                                </div>
-                            </div>
-                            <div class="tab-pane" id="tabs-2" role="tabpanel">
-                                <div class="product__details__tab__desc">
-                                    <p>@Model.Information</p>
                                 </div>
                             </div>
                             <div class="tab-pane" id="tabs-3" role="tabpanel">

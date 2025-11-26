@@ -1,24 +1,56 @@
+using ECommerce.Application.Interfaces;
+using ECommerce.Application.Services;
+using ECommerce.Data;
+using ECommerce.Data.DbContexts;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// Session servisi ekle (VeriTabanýna geçene kadar test için eklendi/Aliye)
-builder.Services.AddDistributedMemoryCache(); // Session için bellek tabanlý cache
+// DbContext ekle
+builder.Services.AddDbContext<ECommerceDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Application services
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IProductCommentService, ProductCommentService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IFavoriteService, FavoriteService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+
+// Session setup
+builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // Session 30 dk boyunca aktif
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// WEB tarafýnda veritabaný oluþturma + seed iþlemi
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ECommerceDbContext>();
+
+    // 1) Ödev gereði veritabanýný oluþtur
+    db.Database.EnsureCreated();
+
+    // 2) Seed iþlemi
+    SeedData.Initialize(db);
+}
+
+// Pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -27,10 +59,11 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseSession(); // Bu satýr çok önemli, session middleware i burada eklenmeli/Aliye
+app.UseSession();
 
 app.UseAuthorization();
 
+// Default route
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

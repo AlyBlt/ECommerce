@@ -1,67 +1,124 @@
-﻿using ECommerceWeb.MVC.Models;
-using ECommerceWeb.MVC.Helpers;
+﻿using ECommerce.Application.Interfaces;
+using ECommerce.Application.Services;
+using ECommerce.Application.ViewModels;
+using ECommerce.Web.Mvc.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
-using ECommerceWeb.MVC.Models.FavoritesViewModels;
-using ECommerceWeb.MVC.Models.HomeViewModels;
 
-namespace ECommerceWeb.MVC.Controllers
+public class FavoritesController : Controller
 {
-    public class FavoritesController : Controller
+    private readonly IFavoriteService _favoriteService;
+    private readonly ICartService _cartService;
+
+    private const string SessionUserIdKey = "UserId";
+
+    public FavoritesController(IFavoriteService favoriteService, ICartService cartService)
     {
-        // Favoriler sayfasını görüntüle
-        public IActionResult Index()
+        _favoriteService = favoriteService;
+        _cartService = cartService;
+    }
+
+    private int? GetCurrentUserId() => HttpContext.Session.GetInt32(SessionUserIdKey);
+
+    public IActionResult Index()
+    {
+        var userId = GetCurrentUserId();
+        List<FavoriteItemViewModel> favorites;
+
+        if (userId.HasValue)
         {
-            var favorites = SessionHelper.GetFavorites(HttpContext) ?? new List<FavoriteItem>();
-            HttpContext.Session.SetInt32("FavoritesCount", favorites.Count);
-            return View(favorites);
+            // DB’den al
+            favorites = _favoriteService.GetByUser(userId.Value)
+                        .Select(f => new FavoriteItemViewModel
+                        {
+                            ProductId = f.ProductId,
+                            Name = f.Product?.Name ?? "",
+                            Price = f.Product?.Price ?? 0,
+                            ImageUrl = "" // Product.ImageUrl varsa ekle
+                        }).ToList();
+        }
+        else
+        {
+            // Session’dan al
+            favorites = SessionHelper.GetFavorites(HttpContext) ?? new List<FavoriteItemViewModel>();
         }
 
-        // Ürünü favorilere ekle
-        [HttpPost]
-        public IActionResult Add(int productId)
-        {
-            var favorites = SessionHelper.GetFavorites(HttpContext) ?? new List<FavoriteItem>();
+        HttpContext.Session.SetInt32("FavoritesCount", favorites.Count);
+        return View(favorites);
+    }
 
+    [HttpPost]
+    public IActionResult Add(int productId)
+    {
+        var userId = GetCurrentUserId();
+
+        if (userId.HasValue)
+        {
+            _favoriteService.Add(userId.Value, productId);
+        }
+        else
+        {
+            // Session tabanlı ekleme
+            var favorites = SessionHelper.GetFavorites(HttpContext) ?? new List<FavoriteItemViewModel>();
             if (!favorites.Any(f => f.ProductId == productId))
             {
-                var products = HttpContext.Session.GetObjectFromJson<List<ProductListingModel>>("Products") ?? new List<ProductListingModel>();
-                var product = products.FirstOrDefault(p => p.Id == productId);
-
-                if (product != null)
+                favorites.Add(new FavoriteItemViewModel
                 {
-                    favorites.Add(new FavoriteItem
-                    {
-                        ProductId = product.Id,
-                        Name = product.Name,
-                        Price = product.Price,
-                        ImageUrl = product.ImageUrl
-                    });
-                }
+                    ProductId = productId,
+                    Name = "Demo Product", // DB yoksa placeholder
+                    Price = 0,
+                    ImageUrl = ""
+                });
             }
-
             SessionHelper.SaveFavorites(HttpContext, favorites);
             HttpContext.Session.SetInt32("FavoritesCount", favorites.Count);
-
-            return Ok(); // JS için
         }
 
-        // Ürünü favorilerden kaldır
-        [HttpPost]
-        public IActionResult Remove(int productId)
-        {
-            var favorites = SessionHelper.GetFavorites(HttpContext) ?? new List<FavoriteItem>();
-            var item = favorites.FirstOrDefault(f => f.ProductId == productId);
+        return Ok();
+    }
 
+    [HttpPost]
+    public IActionResult Remove(int productId)
+    {
+        var userId = GetCurrentUserId();
+
+        if (userId.HasValue)
+        {
+            _favoriteService.Remove(userId.Value, productId);
+        }
+        else
+        {
+            var favorites = SessionHelper.GetFavorites(HttpContext) ?? new List<FavoriteItemViewModel>();
+            var item = favorites.FirstOrDefault(f => f.ProductId == productId);
             if (item != null)
             {
                 favorites.Remove(item);
                 SessionHelper.SaveFavorites(HttpContext, favorites);
             }
-
             HttpContext.Session.SetInt32("FavoritesCount", favorites.Count);
-
-            return RedirectToAction("Index");
         }
+
+        return RedirectToAction("Index");
+    }
+
+
+    [HttpPost]
+    public IActionResult AddFavoritesToCart()
+    {
+        var userId = HttpContext.Session.GetInt32("UserId");
+        if (!userId.HasValue)
+            return RedirectToAction("Login", "Auth");
+
+        // Kullanıcının favorilerini al
+        var favorites = _favoriteService.GetByUser(userId.Value);
+
+        foreach (var fav in favorites)
+        {
+            // Sepete ekle
+            _cartService.AddToCart(userId.Value, fav.ProductId, 1); // quantity = 1
+        }
+
+        TempData["Message"] = "All favorite items added to cart.";
+        return RedirectToAction("Index", "Cart");
     }
 }

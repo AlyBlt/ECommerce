@@ -1,5 +1,4 @@
-﻿@using ECommerceWeb.MVC.Models.OrderviewModels
-@model UserInformation
+﻿@model ECommerce.Application.ViewModels.UserInformationViewModel
 @{
     ViewData["Title"] = "User Information";
     Layout = "~/Views/Shared/_OganiLayout.cshtml";
@@ -34,20 +33,6 @@
                                 <label>Address<span>*</span></label>
                                 <input type="text" asp-for="Address" class="form-control" placeholder="Street, building, apartment" required />
                                 @Html.ValidationMessageFor(m => m.Address, "", new { @class = "text-danger" })
-                            </div>
-
-                            <!-- City -->
-                            <div class="col-lg-6 mb-3">
-                                <label>City<span>*</span></label>
-                                <input type="text" asp-for="City" class="form-control" placeholder="Enter city name" required />
-                                @Html.ValidationMessageFor(m => m.City, "", new { @class = "text-danger" })
-                            </div>
-
-                            <!-- Zip Code -->
-                            <div class="col-lg-6 mb-3">
-                                <label>Zip Code<span>*</span></label>
-                                <input type="text" asp-for="ZipCode" class="form-control" placeholder="Enter zip code" required />
-                                @Html.ValidationMessageFor(m => m.ZipCode, "", new { @class = "text-danger" })
                             </div>
 
                             <!-- Phone -->

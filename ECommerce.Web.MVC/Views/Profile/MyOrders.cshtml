@@ -1,8 +1,8 @@
-﻿@model List<ECommerceWeb.MVC.Models.OrderviewModels.Order>
+﻿@model List< ECommerce.Application.ViewModels.OrderSummaryViewModel>
 
 @{
     ViewData["Title"] = "My Orders";
-    var user = ViewBag.User as ECommerceWeb.MVC.Models.OrderviewModels.UserInformation;
+    var user = ViewBag.User as ECommerce.Application.ViewModels.UserInformationViewModel;
 }
 <section class="checkout profile-section">
     <div class="container">
@@ -58,15 +58,15 @@
                                             @foreach (var item in order.Items)
                                             {
                                                 <tr>
-                                                    <td>@item.Name</td>
-                                                    <td>$@item.Price</td>
+                                                    <td>@item.ProductName</td>
+                                                    <td>$@item.UnitPrice</td>
                                                     <td>@item.Quantity</td>
                                                     <td>$@item.TotalPrice</td>
                                                 </tr>
                                             }
                                         </tbody>
                                     </table>
-                                    <p class="text-right"><strong>Total:</strong> $@order.TotalPrice</p>
+                                    <p class="text-right"><strong>Total:</strong> $@order.TotalAmount</p>
                                 </div>
                             </div>
                         }

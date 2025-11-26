@@ -1,6 +1,6 @@
-﻿@{
+﻿@model ECommerce.Application.ViewModels.HomePageViewModel
+@{
     ViewData["Title"] = "Home Page";
-   
 }
 
 <!-- HERO SECTION -->
@@ -12,20 +12,15 @@
                 <div class="hero__categories">
                     <div class="hero__categories__all">
                         <i class="fa fa-bars"></i>
-                        <span>All departments</span>
+                        <span>All Categories</span>
                     </div>
                     <ul>
-                        <li><a href="#">Fresh Meat</a></li>
-                        <li><a href="#">Vegetables</a></li>
-                        <li><a href="#">Fruit & Nut Gifts</a></li>
-                        <li><a href="#">Fresh Berries</a></li>
-                        <li><a href="#">Ocean Foods</a></li>
-                        <li><a href="#">Butter & Eggs</a></li>
-                        <li><a href="#">Fastfood</a></li>
-                        <li><a href="#">Fresh Onion</a></li>
-                        <li><a href="#">Papayaya & Crisps</a></li>
-                        <li><a href="#">Oatmeal</a></li>
-                        <li><a href="#">Fresh Bananas</a></li>
+                        @foreach (var cat in Model.Categories)
+                        {
+                            <li>
+                                <a href="/listing?category=@cat.Name">@cat.Name</a>
+                            </li>
+                        }
                     </ul>
                 </div>
             </div>
@@ -35,10 +30,6 @@
                 <div class="hero__search">
                     <div class="hero__search__form">
                         <form>
-                            <div class="hero__search__categories">
-                                All Categories
-                                <span class="arrow_carrot-down"></span>
-                            </div>
                             <input type="text" placeholder="What do you need?">
                             <button type="submit" class="site-btn">SEARCH</button>
                         </form>
@@ -55,188 +46,162 @@
                     </div>
                 </div>
 
-                <div class="hero__item set-bg" data-setbg="/img/hero/banner.jpg">
-                    <div class="hero__text">
-                        <span>FRUIT FRESH</span>
-                        <h2>Vegetable <br />100% Organic</h2>
-                        <p>Free Pickup and Delivery Available</p>
-                        <a asp-controller="Home" asp-action="Listing" class="primary-btn">SHOP NOW</a>
+               @*  SPECIAL OFFERS/NEW DISCOUNTS.. *@
+                <section class="specialOffers">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <!-- sol kategori menüsüne göre hizalandı -->
+                                <div class="special-offers-slider my-slider">
+                                    <div class="my-slide" style="background-image: url('@Url.Content("~/img/hero/free-shipping.jpg?v2")');">
+                                        <div class="my-slide-content">
+                                            <span style="font-size:40px; font-weight:bold;">Special Offer</span>
+                                            <h2>Free Shipping<br>On Orders Over $30</h2>
+                                            <p style="font-weight:bold;">Shop your favorites and enjoy fast & free delivery.</p>
+                                            <a href="/listing" class="primary-btn">SHOP NOW</a>
+                                        </div>
+                                    </div>
+                                    <div class="my-slide" style="background-image: url('@Url.Content("~/img/hero/sale-banner.jpg?v2")');">
+                                        <div class="my-slide-content">
+                                            <span style="font-size:40px; font-weight:bold;">Limited Time</span>
+                                            <h2>Save Up To 40%</h2>
+                                            <p>Don't miss exclusive discounts across all categories.</p>
+                                            <a href="/listing" class="primary-btn">BROWSE DEALS</a>
+                                        </div>
+                                    </div>
+                                    <div class="my-slide" style="background-image: url('@Url.Content("~/img/hero/new-arrivals.jpg?v2")');">
+                                        <div class="my-slide-content">
+                                            <span style="font-size:40px; font-weight:bold;">New Arrivals</span>
+                                            <h2>Fresh Products<br>Just Landed</h2>
+                                            <p>Explore the latest additions curated for you.</p>
+                                            <a href="/listing" class="primary-btn">DISCOVER</a>
+                                        </div>
+                                    </div>
+                                    <!-- Arrows -->
+                                    <button class="arrow left">‹</button>
+                                    <button class="arrow right">›</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </section>
             </div>
         </div>
     </div>
 </section>
 
-<!-- CATEGORY SLIDER -->
-<section class="categories">
+<!-- DISCOUNTED PRODUCTS SLIDER (CSS Categories olduğu için class isimlerini değiştirmedim!!!--> 
+<section class="discount">
     <div class="container">
         <div class="row">
-            <div class="categories__slider owl-carousel">
-                <div class="col-lg-3">
-                    <div class="categories__item set-bg" data-setbg="/img/categories/cat-1.jpg">
-                        <h5><a href="#">Fresh Fruit</a></h5>
-                    </div>
-                </div>
-                <div class="col-lg-3">
-                    <div class="categories__item set-bg" data-setbg="/img/categories/cat-2.jpg">
-                        <h5><a href="#">Dried Fruit</a></h5>
-                    </div>
-                </div>
-                <div class="col-lg-3">
-                    <div class="categories__item set-bg" data-setbg="/img/categories/cat-3.jpg">
-                        <h5><a href="#">Vegetables</a></h5>
-                    </div>
-                </div>
-                <div class="col-lg-3">
-                    <div class="categories__item set-bg" data-setbg="/img/categories/cat-4.jpg">
-                        <h5><a href="#">Drink Fruits</a></h5>
-                    </div>
-                </div>
+            <div class="categories__slider discount__slider owl-carousel">
+                @foreach (var item in Model.Featured.DiscountedProducts)
+                {
+                    <div class="col-lg-3">
+                        <div class="categories__item set-bg" data-setbg="@Url.Content(item.ImageUrl)">
+                            <h5 style="border-radius:10px;"><a href="#" style="border-radius:10px;"> @item.Price.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("en-US")) </a></h5>
+                            <span>@((int)((item.OldPrice - item.Price) * 100 /item.OldPrice)) % Discount</span>
+                        </div>
+                    </div> 
+                }
             </div>
         </div>
     </div>
 </section>
 
-<!-- FEATURED PRODUCTS -->
+@* FEATURED PRODUCTS *@
 <section class="featured spad">
     <div class="container">
         <div class="row">
             <div class="col-lg-12">
                 <div class="section-title">
-                    <h2>Featured Product</h2>
+                    <h2>Featured Products</h2>
                 </div>
                 <div class="featured__controls">
                     <ul>
-                        <li class="active" data-filter="*">All</li>
-                        <li data-filter=".oranges">Oranges</li>
-                        <li data-filter=".fresh-meat">Fresh Meat</li>
-                        <li data-filter=".vegetables">Vegetables</li>
-                        <li data-filter=".fastfood">Fastfood</li>
+                        <li class="active" data-filter=".popular">Popular Products</li> <!-- default active -->
+                        <li data-filter=".new-arrival">New Arrival Products</li>
                     </ul>
                 </div>
             </div>
         </div>
 
         <div class="row featured__filter">
-            <!-- Example Product Card -->
-            <div class="col-lg-3 col-md-4 col-sm-6 mix oranges fresh-meat">
-                <div class="featured__item">
-                    <div class="featured__item__pic set-bg" data-setbg="/img/featured/feature-1.jpg">
-                        <ul class="featured__item__pic__hover">
-                            <li><a href="#"><i class="fa fa-heart"></i></a></li>
-                            <li><a href="#"><i class="fa fa-retweet"></i></a></li>
-                            <li><a asp-controller="Cart" asp-action="AddProduct"><i class="fa fa-shopping-cart"></i></a></li>
-                        </ul>
-                    </div>
-                    <div class="featured__item__text">
-                        <h6><a asp-controller="Home" asp-action="ProductDetail">Crab Pool Security</a></h6>
-                        <h5>$30.00</h5>
+            <!-- Featured Products (Default olarak Popular) -->
+            @foreach (var product in Model.Featured.PopularProducts)
+            {
+                <div class="col-lg-3 col-md-4 col-sm-6 mix popular">
+                    <div class="featured__item">
+                        <div class="featured__item__pic set-bg" data-setbg="@Url.Content(product.ImageUrl)">
+                            <ul class="featured__item__pic__hover">
+                                <li><a href="#"><i class="fa fa-heart"></i></a></li>
+                                <li><a href="#"><i class="fa fa-retweet"></i></a></li>
+                                <li><a asp-controller="Cart" asp-action="AddProduct" asp-route-id="@product.Id"><i class="fa fa-shopping-cart"></i></a></li>
+                            </ul>
+                        </div>
+                             <div class="featured__item__text">
+                                <h6>
+                                    <a asp-controller="Home"
+                                       asp-action="ProductDetail"
+                                       asp-route-id="@product.Id">
+                                        @product.Name
+                                    </a>
+                                </h6>
+
+                                <div class="rating-area">
+                                    <span class="stars">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            if (i <= product.Rating)
+                                            {
+                                                <i class="fa fa-star"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fa fa-star-o"></i>
+                                            }
+                                        }
+                                    </span>
+
+                                    <span class="review-count">
+                                        (@product.ReviewCount reviews)
+                                    </span>
+                                </div>
+
+                            <h5>@product.Price.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("en-US"))</h5>
+                            </div>
+                     </div>
+                </div>
+            }
+
+           
+            @* New Arrival ürünler başlangıçta gizli *@
+            @foreach (var product in Model.Featured.NewArrivalProducts)
+            {
+                <div class="col-lg-3 col-md-4 col-sm-6 mix new-arrival" style="display:none;">
+                    <div class="featured__item">
+                        <div class="featured__item__pic set-bg" data-setbg="@Url.Content(product.ImageUrl)">
+                            <ul class="featured__item__pic__hover">
+                                <li><a href="#"><i class="fa fa-heart"></i></a></li>
+                                <li><a href="#"><i class="fa fa-retweet"></i></a></li>
+                                <li><a asp-controller="Cart" asp-action="AddProduct" asp-route-id="@product.Id"><i class="fa fa-shopping-cart"></i></a></li>
+                            </ul>
+                        </div>
+                        <div class="featured__item__text">
+                            <h6><a asp-controller="Home" asp-action="ProductDetail" asp-route-id="@product.Id">@product.Name</a></h6>
+                            <h5>@product.Price.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("en-US"))</h5>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Diğer ürün kartları aynı halde bırakıldı -->
-            @* ... kalan ürün kartları ... *@
+            }
         </div>
     </div>
 </section>
 
-<!-- MID BANNER -->
-<div class="banner">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-6 col-md-6">
-                <div class="banner__pic">
-                    <img src="/img/banner/banner-1.jpg" alt="">
-                </div>
-            </div>
-            <div class="col-lg-6 col-md-6">
-                <div class="banner__pic">
-                    <img src="/img/banner/banner-2.jpg" alt="">
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- PRODUCT GROUP SECTIONS (Latest / Top Rated / Review) -->
-<section class="latest-product spad">
-    <div class="container">
-        <div class="row">
+@* Mid Banner silindi *@
 
-            <!-- Latest Products -->
-            <div class="col-lg-4 col-md-6">
-                <div class="latest-product__text">
-                    <h4>Latest Products</h4>
-                    <div class="latest-product__slider owl-carousel">
-                        <div class="latest-prdouct__slider__item">
-                            <a href="#" class="latest-product__item">
-                                <div class="latest-product__item__pic">
-                                    <img src="/img/latest-product/lp-1.jpg" alt="">
-                                </div>
-                                <div class="latest-product__item__text">
-                                    <h6>Crab Pool Security</h6>
-                                    <span>$30.00</span>
-                                </div>
-                            </a>
-                            <a href="#" class="latest-product__item">
-                                <div class="latest-product__item__pic">
-                                    <img src="/img/latest-product/lp-2.jpg" alt="">
-                                </div>
-                                <div class="latest-product__item__text">
-                                    <h6>Crab Pool Security</h6>
-                                    <span>$30.00</span>
-                                </div>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Top Rated -->
-            <div class="col-lg-4 col-md-6">
-                <div class="latest-product__text">
-                    <h4>Top Rated Products</h4>
-                    <div class="latest-product__slider owl-carousel">
-                        <div class="latest-prdouct__slider__item">
-                            <a href="#" class="latest-product__item">
-                                <div class="latest-product__item__pic">
-                                    <img src="/img/latest-product/lp-1.jpg" alt="">
-                                </div>
-                                <div class="latest-product__item__text">
-                                    <h6>Crab Pool Security</h6>
-                                    <span>$30.00</span>
-                                </div>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Review Products -->
-            <div class="col-lg-4 col-md-6">
-                <div class="latest-product__text">
-                    <h4>Review Products</h4>
-                    <div class="latest-product__slider owl-carousel">
-                        <div class="latest-prdouct__slider__item">
-                            <a href="#" class="latest-product__item">
-                                <div class="latest-product__item__pic">
-                                    <img src="/img/latest-product/lp-3.jpg" alt="">
-                                </div>
-                                <div class="latest-product__item__text">
-                                    <h6>Crab Pool Security</h6>
-                                    <span>$30.00</span>
-                                </div>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</section>
 
 <!-- BLOG SECTION -->
 <section class="from-blog spad">
@@ -250,10 +215,11 @@
         </div>
 
         <div class="row">
+            <!-- Example Blog Post -->
             <div class="col-lg-4 col-md-4 col-sm-6">
                 <div class="blog__item">
                     <div class="blog__item__pic">
-                        <img src="/img/blog/blog-1.jpg" alt="">
+                        <img src="/img/blog/blog-6.jpg?v2" alt="">
                     </div>
                     <div class="blog__item__text">
                         <ul>
@@ -265,8 +231,193 @@
                     </div>
                 </div>
             </div>
-
-            <!-- diğer blog kartları aynı şekilde bırakıldı -->
+            <div class="col-lg-4 col-md-4 col-sm-6">
+                <div class="blog__item">
+                    <div class="blog__item__pic">
+                        <img src="/img/blog/blog-4.jpg?v2" alt="">
+                    </div>
+                    <div class="blog__item__text">
+                        <ul>
+                            <li><i class="fa fa-calendar-o"></i> Nov 7, 2022</li>
+                            <li><i class="fa fa-comment-o"></i> 7</li>
+                        </ul>
+                        <h5><a href="#">Benefits of organic foods</a></h5>
+                        <p>Sed quia non numquam modi tempora indunt ut labore et dolore magnam aliquam quaerat.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-4 col-sm-6">
+                <div class="blog__item">
+                    <div class="blog__item__pic">
+                        <img src="/img/blog/blog-3.jpg?v2" alt="">
+                    </div>
+                    <div class="blog__item__text">
+                        <ul>
+                            <li><i class="fa fa-calendar-o"></i> Sep 3, 2024</li>
+                            <li><i class="fa fa-comment-o"></i> 4</li>
+                        </ul>
+                        <h5><a href="#">Fruits are rich in antioxidants</a></h5>
+                        <p>Sed quia non numquam modi tempora indunt ut labore et dolore magnam aliquam quaerat.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </section>
+
+<style>
+    .discount .categories__item span {
+      
+        color: darkred;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+
+  
+    .discount .categories__item h5 {
+        background-color: darkred !important;
+        color: black !important;
+        padding: 5px;
+        display: inline-block; /* genişliği içeriğe göre sınırlar */
+        width: auto; /* gerekirse belirli bir genişlik */
+        max-width: 120px; /* opsiyonel: maksimum genişlik */
+       
+        }
+
+    .rating-area {
+        margin: 5px 0;
+        font-size: 16px;
+        
+    }
+
+        .rating-area .review-count {
+            color: #666;
+            margin-left: 5px;
+        }
+
+
+/* my-slider padding ve genişlik */
+    .my-slider {
+        position: relative;
+        overflow: hidden;
+        height: 50vh;
+        max-height: 500px;
+    }
+
+    .my-slide {
+        position: absolute;
+        top: 0;
+        transform: translateX(100%);
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center;
+        transition: left 1.5s ease-in-out;
+        display: flex;
+        align-items: center;
+        padding: 60px;
+        color: #fff;
+    }
+
+        /* İlk slide sayfa açılır açılmaz gözükmesi için */
+        .my-slide:first-child {
+            transform: translateX(0%);
+                   
+        }
+
+
+        .my-slide.active {
+            transform: translateX(0%);
+           
+        }
+
+        .my-slide.prev {
+            transform: translateX(-100%);
+        }
+
+/* slider içeriği */
+    .my-slide-content {
+        padding: 0 20px; /* Kenarlardan biraz boşluk bırak */
+        max-width: 100% !important;
+    }
+
+/* oklar */
+.my-slider .arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.4);
+    border: none;
+    color: #fff;
+    padding: 12px 18px;
+    font-size: 28px;
+    cursor: pointer;
+    border-radius: 8px;
+}
+.my-slider .left { left: 10px; }
+.my-slider .right { right: 10px; }
+
+      
+</style>
+
+
+
+
+<script>
+    document.querySelectorAll('.featured__controls li').forEach(btn => {
+        btn.addEventListener('click', function(){
+            // active class
+            document.querySelectorAll('.featured__controls li').forEach(li => li.classList.remove('active'));
+            this.classList.add('active');
+
+            const filter = this.getAttribute('data-filter');
+            document.querySelectorAll('.featured__filter .mix').forEach(item => {
+                if(item.classList.contains(filter.substring(1))) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+
+
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const slides = document.querySelectorAll(".special-offers-slider .my-slide");
+        let index = 0;
+
+       
+        function showSlide(newIndex) {
+            slides.forEach((slide, i) => {
+                slide.classList.remove("active", "prev");
+                if (i === index) slide.classList.add("prev");   // önceki slide sola kayar
+                if (i === newIndex) slide.classList.add("active"); // yeni slide aktif
+            });
+
+            index = newIndex;
+        }
+
+        document.querySelector(".special-offers-slider .left").addEventListener("click", () => {
+            showSlide((index - 1 + slides.length) % slides.length);
+        });
+
+        document.querySelector(".special-offers-slider .right").addEventListener("click", () => {
+            showSlide((index + 1) % slides.length);
+        });
+
+        setInterval(() => {
+            showSlide((index + 1) % slides.length);
+        }, 7000);
+
+        // Başlangıç
+        slides.forEach((slide, i) => {
+            slide.classList.remove("active", "prev");
+            if (i === 0) slide.classList.add("active");
+        });
+    });
+</script>

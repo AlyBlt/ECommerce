@@ -1,0 +1,35 @@
+﻿@model ECommerce.Application.ViewModels.CommentViewModel
+
+@{
+    ViewData["Title"] = "Approve Comment";
+    Layout = "_SbAdminLayout";
+}
+
+<h1 class="h3 mb-4 text-gray-800">Approve Comment</h1>
+
+<div class="card shadow mb-4">
+    <div class="card-body">
+
+        <h5 class="text-primary mb-3">Comment Detail</h5>
+
+        <p><strong>User:</strong> @Model.UserName</p>
+        <p><strong>Product:</strong> @Model.ProductName</p>
+        <p><strong>Rating:</strong> @Model.Rating</p>
+        <p><strong>Comment:</strong> @Model.Text</p>
+
+        <!-- Yorum Onaylama Formu -->
+        <form asp-action="ApproveComment" asp-route-id="@Model.Id" method="post" class="mt-4">
+            <input type="hidden" asp-for="Id" />
+
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-check"></i> Approve Comment
+            </button>
+
+            <a asp-action="List" class="btn btn-secondary ml-2">
+                Cancel
+            </a>
+
+        </form>
+
+    </div>
+</div>

@@ -1,60 +1,50 @@
-﻿using Newtonsoft.Json;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
-using ECommerceWeb.MVC.Models.FavoritesViewModels;
-using ECommerceWeb.MVC.Models.CartViewModels;
+using ECommerce.Application.ViewModels;
 
-namespace ECommerceWeb.MVC.Helpers
+namespace ECommerce.Web.Mvc.Helpers
 {
     // Bu metot, sepet ve favoriler için session yönetimini sağlar
     public static class SessionHelper
     {
-        // Sepet için kullanılan session anahtarını tanımlıyoruz
-        private const string SessionCartKey = "Cart";  // Anahtarı "Cart" olarak sabitliyoruz
-        private const string SessionFavoritesKey = "Favorites"; // Favoriler için session anahtarı
+        private const string SessionCartKey = "Cart";
+        private const string SessionFavoritesKey = "Favorites";
 
-        // Sepet session'ını almak (varsa)
-        public static Cart GetCart(HttpContext httpContext)
+        // Sepet session'ını almak
+        public static CartViewModel GetCart(HttpContext httpContext)
         {
-            var cart = httpContext.Session.GetString(SessionCartKey); // Sepet anahtarını buradan alıyoruz
-            if (string.IsNullOrEmpty(cart))
-                return new Cart(); // Eğer sepet boşsa yeni bir Cart döndür
-            return JsonConvert.DeserializeObject<Cart>(cart); // Sepet bilgilerini deserialize ediyoruz
+            return httpContext.Session.GetObjectFromJson<CartViewModel>(SessionCartKey) ?? new CartViewModel();
         }
 
-        // Sepet session'ını kaydetmek (varsa)
-        public static void SaveCart(HttpContext httpContext, Cart cart)
+        // Sepet session'ını kaydetmek
+        public static void SaveCart(HttpContext httpContext, CartViewModel cart)
         {
-            var serializedCart = JsonConvert.SerializeObject(cart); // Sepeti serialize ediyoruz
-            httpContext.Session.SetString(SessionCartKey, serializedCart); // Sepeti session'a kaydediyoruz
+            httpContext.Session.SetObjectAsJson(SessionCartKey, cart);
         }
 
         // Sepet session'ını temizlemek
         public static void ClearCart(HttpContext httpContext)
         {
-            httpContext.Session.Remove(SessionCartKey); // Sepet session'ını temizliyoruz
+            httpContext.Session.Remove(SessionCartKey);
         }
 
         // Favoriler session'ını almak
-        public static List<FavoriteItem> GetFavorites(HttpContext httpContext)
+        public static List<FavoriteItemViewModel> GetFavorites(HttpContext httpContext)
         {
-            var favorites = httpContext.Session.GetString(SessionFavoritesKey); // Favoriler anahtarını buradan alıyoruz
-            if (string.IsNullOrEmpty(favorites))
-                return new List<FavoriteItem>(); // Eğer favoriler boşsa yeni bir liste döndür
-            return JsonConvert.DeserializeObject<List<FavoriteItem>>(favorites); // Favoriler bilgilerini deserialize ediyoruz
+            return httpContext.Session.GetObjectFromJson<List<FavoriteItemViewModel>>(SessionFavoritesKey)
+                   ?? new List<FavoriteItemViewModel>();
         }
 
         // Favoriler session'ını kaydetmek
-        public static void SaveFavorites(HttpContext httpContext, List<FavoriteItem> favorites)
+        public static void SaveFavorites(HttpContext httpContext, List<FavoriteItemViewModel> favorites)
         {
-            var serializedFavorites = JsonConvert.SerializeObject(favorites); // Favorileri serialize ediyoruz
-            httpContext.Session.SetString(SessionFavoritesKey, serializedFavorites); // Favorileri session'a kaydediyoruz
+            httpContext.Session.SetObjectAsJson(SessionFavoritesKey, favorites);
         }
 
-        // Favoriler session'ını temizlemek (Eğer gereksizse)
+        // Favoriler session'ını temizlemek
         public static void ClearFavorites(HttpContext httpContext)
         {
-            httpContext.Session.Remove(SessionFavoritesKey); // Favoriler session'ını temizliyoruz
+            httpContext.Session.Remove(SessionFavoritesKey);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿@model ECommerceWeb.MVC.Models.OrderviewModels.UserInformation
+﻿@model ECommerce.Application.ViewModels.UserDetailsViewModel
 @{
     ViewData["Title"] = "My Profile";
 }
@@ -54,20 +54,11 @@
                             <div class="profile__info-box">@Model.Phone</div>
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label>Zip Code</label>
-                            <div class="profile__info-box">@Model.ZipCode</div>
-                        </div>
-
                         <div class="col-md-12 mb-3">
                             <label>Address</label>
                             <div class="profile__info-box">@Model.Address</div>
                         </div>
 
-                        <div class="col-md-12 mb-3">
-                            <label>City</label>
-                            <div class="profile__info-box">@Model.City</div>
-                        </div>
                     </div>
 
                     <div class="text-end mt-4">

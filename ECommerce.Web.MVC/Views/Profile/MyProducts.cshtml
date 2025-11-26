@@ -1,13 +1,8 @@
-﻿@model List<ECommerceWeb.MVC.Models.HomeViewModels.ProductListingModel>
-@using System.Text.Json
+﻿@model List<ECommerce.Application.ViewModels.ProductListingViewModel>
+
 @{
     ViewData["Title"] = "My Products";
-
-    // Kullanıcıyı session’dan al
-    var userJson = Context.Session.GetString("UserInfo");
-    var user = string.IsNullOrEmpty(userJson)
-        ? null
-        : JsonSerializer.Deserialize<ECommerceWeb.MVC.Models.OrderviewModels.UserInformation>(userJson);
+    var user = ViewBag.User as ECommerce.Application.ViewModels.UserInformationViewModel;
 }
 
 <section class="checkout profile-section">
@@ -27,7 +22,7 @@
                 </div>
             </div>
 
-            <!-- RIGHT -->
+            <!-- RIGHT CONTENT -->
             <div class="col-lg-8 col-md-8">
                 <div class="checkout__form profile-content">
                     <h4 class="mb-4">My Products</h4>
@@ -39,24 +34,67 @@
                     else
                     {
                         <div class="row">
+
                             @foreach (var item in Model)
                             {
-                                <div class="col-lg-6 col-md-6 col-sm-6 mb-4">
-                                    <div class="product__item">
-                                        <div class="product__item__pic set-bg" style="background-image: url('@item.ImageUrl'); height: 200px; background-size: cover; background-position: center;"></div>
-                                        <div class="product__item__text text-center mt-2">
-                                            <h6>@item.Name</h6>
-                                            <h5>
-                                                $@item.Price
-                                                @if (item.IsOnSale)
-                                                {
-                                                    <span class="text-danger"><del>$@item.OldPrice</del></span>
-                                                }
-                                            </h5>
+                                <div class="col-lg-12 mb-4">
+                                    <div class="product-card">
+                                        <!-- Product Image -->
+                                        <div class="product-image"
+                                             style="background-image: url('@item.ImageUrl');">
                                         </div>
+
+                                        <!-- Product Info -->
+                                        <div class="product-info mt-2">
+                                            <h5>@item.Name</h5>
+                                            <p class="category">Category: <strong>@item.Category</strong></p>
+                                        </div>
+
+                                        <!-- COMMENTS SECTION -->
+                                        @if (item.Comments.Any())
+                                        {
+                                            <div class="comments mt-3">
+                                                <h6 class="comment-title">Comments</h6>
+
+                                                @foreach (var c in item.Comments)
+                                                {
+                                                    <div class="comment-box">
+                                                        <div class="comment-header">
+                                                            <strong>@c.UserName</strong>
+
+                                                            <span class="rating">
+                                                                @for (int i = 1; i <= c.Rating; i++)
+                                                                {
+                                                                    <span class="star">★</span>
+                                                                }
+                                                                @for (int i = 1; i <= (5 - c.Rating); i++)
+                                                                {
+                                                                    <span class="star empty">★</span>
+                                                                }
+                                                            </span>
+
+                                                            @if (!c.IsApproved)
+                                                            {
+                                                                <span class="badge badge-warning">Pending Approval</span>
+                                                            }
+                                                        </div>
+
+                                                        <p class="comment-text">@c.Text</p>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="no-comments mt-2">
+                                                <em>No comments for this product.</em>
+                                            </div>
+                                        }
+
                                     </div>
                                 </div>
                             }
+
                         </div>
                     }
                 </div>
@@ -72,33 +110,108 @@
         padding-bottom: 60px;
     }
 
-    .profile-sidebar {
-        margin-top: 0;
-    }
-
-    .profile-content {
+    .profile-sidebar, .profile-content {
         margin-top: 0;
     }
 
     .profile-menu li a {
         color: #111;
         text-decoration: none;
-        
     }
 
         .profile-menu li a:hover {
             color: #7fad39;
         }
 
-        /* Aktif sayfa linki siyah kalacak, yeşil olmasın */
         .profile-menu li a.active {
             color: #111;
+            font-weight: bold;
         }
 
-    .product__item {
+    /* --- PRODUCT CARD --- */
+    .product-card {
+        background: #f8f8f8;
         border: 1px solid #ebebeb;
         border-radius: 5px;
-        background: #f8f8f8;
-        padding: 10px;
+        padding: 15px;
+    }
+
+    .product-image {
+        width: 100%;
+        height: 220px;
+        background-size: cover;
+        background-position: center;
+        border-radius: 5px;
+    }
+
+    .price {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    .old-price {
+        color: #e74c3c;
+        margin-left: 5px;
+    }
+
+    .category {
+        font-size: 14px;
+        color: #777;
+    }
+
+    /* --- COMMENTS --- */
+    .comments {
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 5px;
+    }
+
+    .comment-title {
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 5px;
+        margin-bottom: 10px;
+    }
+
+    .comment-box {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+        .comment-box:last-child {
+            border-bottom: none;
+        }
+
+    .comment-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .rating .star {
+        color: gold;
+        font-size: 14px;
+    }
+
+        .rating .star.empty {
+            color: #ccc;
+        }
+
+    .comment-text {
+        font-size: 14px;
+        margin-top: 5px;
+    }
+
+    .badge-warning {
+        background: #f6c23e;
+        padding: 4px 8px;
+        font-size: 12px;
+        border-radius: 4px;
+    }
+
+    .no-comments {
+        font-size: 13px;
+        color: #666;
     }
 </style>

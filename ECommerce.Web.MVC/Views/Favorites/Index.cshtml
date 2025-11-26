@@ -1,4 +1,4 @@
-﻿@model List<ECommerceWeb.MVC.Models.FavoritesViewModels.FavoriteItem>
+﻿@model List<ECommerce.Application.ViewModels.FavoriteItemViewModel>
 
 <section class="shoping-cart spad">
     <div class="container">
@@ -22,7 +22,7 @@
                         {
                             <tr>
                                 <td class="shoping__cart__item d-flex align-items-center">
-                                    <img src="@item.ImageUrl"
+                                    <img src="@(!string.IsNullOrEmpty(item.ImageUrl) ? item.ImageUrl : "/img/product/default.jpg")"
                                          alt="@item.Name"
                                          class="me-3"
                                          style="width:70px; height:70px; object-fit:cover;" />

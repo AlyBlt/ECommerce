@@ -1,10 +1,11 @@
-@using ECommerceWeb.MVC.Models.HomeViewModels
-@model IEnumerable<ProductListingModel>
+@using ECommerce.Application.ViewModels
+@model IEnumerable<ECommerce.Application.ViewModels.ProductListingViewModel>
+
 @{
     ViewData["Title"] = "Shop";
 }
 
-@* HERO (Normal) *@
+<!-- HERO (Normal) -->
 <section class="hero hero-normal">
     <div class="container">
         <div class="row">
@@ -12,16 +13,19 @@
                 <div class="hero__categories">
                     <div class="hero__categories__all">
                         <i class="fa fa-bars"></i>
-                        <span>All departments</span>
+                        <span>All Categories</span>
                     </div>
+
                     <ul>
-                        <li><a href="#">Fresh Meat</a></li>
-                        <li><a href="#">Vegetables</a></li>
-                        <li><a href="#">Fruit & Nut Gifts</a></li>
-                        <!-- Daha fazla kategori -->
+                        @foreach (var category in ViewBag.Categories as List<CategoryViewModel>)
+                        {
+                            <li><a href="?category=@category.Name">@category.Name</a></li>
+                        }
                     </ul>
+
                 </div>
             </div>
+
             <div class="col-lg-9">
                 <div class="hero__search">
                     <div class="hero__search__form">
@@ -34,6 +38,7 @@
                             <button type="submit" class="site-btn">SEARCH</button>
                         </form>
                     </div>
+
                     <div class="hero__search__phone">
                         <div class="hero__search__phone__icon">
                             <i class="fa fa-phone"></i>
@@ -43,61 +48,64 @@
                             <span>support 24/7 time</span>
                         </div>
                     </div>
+
                 </div>
             </div>
+
         </div>
     </div>
 </section>
 
-@* Breadcrumb *@
+<!-- Breadcrumb -->
 <section class="breadcrumb-section set-bg" data-setbg="/img/breadcrumb.jpg">
     <div class="container">
-        <div class="row">
-            <div class="col-lg-12 text-center">
-                <div class="breadcrumb__text">
-                    <h2>Organi Shop</h2>
-                    <div class="breadcrumb__option">
-                        <a href="/">Home</a>
-                        <span>Shop</span>
-                    </div>
+        <div class="col-lg-12 text-center">
+            <div class="breadcrumb__text">
+                <h2>Hello World Shop</h2>
+                <div class="breadcrumb__option">
+                    <a href="/">Home</a>
+                    <span>Shop</span>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-@* Sidebar + Ürün Listesi *@
+<!-- Sidebar + Products -->
 <section class="product spad">
     <div class="container">
         <div class="row">
-            @* --- Sidebar --- *@
+
+          <!-- Sidebar with filters -->
             <div class="col-lg-3 col-md-5">
                 <div class="sidebar">
                     <div class="sidebar__item">
-                        <h4>Department</h4>
+                        <h4>Filters</h4>
                         <ul>
-                            <li><a href="?category=Fresh Meat">Fresh Meat</a></li>
-                            <li><a href="?category=Vegetables">Vegetables</a></li>
-                            <li><a href="?category=Fruit & Nut Gifts">Fruit & Nut Gifts</a></li>
+                            <li><a href="?filter=top-rated">Top Rated</a></li>
+                            <li><a href="?filter=on-sale">On Sale</a></li>
+                            <li><a href="?filter=new-arrivals">New Arrivals</a></li>
                         </ul>
                     </div>
                 </div>
             </div>
 
-            @* --- Ürün Grid --- *@
+            <!-- Product Grid -->
             <div class="col-lg-9 col-md-7">
                 <div class="row">
                     @foreach (var product in Model)
                     {
                         <div class="col-lg-4 col-md-6 col-sm-6">
                             <div class="product__item">
-                                <div class="product__item__pic set-bg" data-setbg="@product.ImageUrl">
+
+                                <div class="product__item__pic set-bg" data-setbg="@Url.Content(product.ImageUrl)">
                                     @if (product.IsOnSale)
                                     {
                                         <div class="product__discount__percent">
                                             -@((int)((product.OldPrice - product.Price) / product.OldPrice * 100))%
                                         </div>
                                     }
+
                                     <ul class="product__item__pic__hover">
                                         <li>
                                             <a href="#" class="favorite-btn" data-product-id="@product.Id">
@@ -107,38 +115,59 @@
                                         <li><a href="#"><i class="fa fa-retweet"></i></a></li>
                                     </ul>
                                 </div>
+
                                 <div class="product__item__text">
                                     <h6><a href="#">@product.Name</a></h6>
+
                                     <h5>
                                         $@product.Price
                                         @if (product.IsOnSale)
                                         {
-                                            <del style="color: #999; font-size: 0.9em; margin-left:5px;">
-                                                $@product.OldPrice
-                                            </del>
+                                            <del>$@product.OldPrice</del>
                                         }
                                     </h5>
 
-                                    @* --- Add to Cart Form --- *@
+                                    <!-- Yýldýz Puaný ve Yorum Sayýsý -->
+                                    <div class="rating-area">
+                                        <span class="stars">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                if (i <= product.Rating)  
+                                                {
+                                                    <i class="fa fa-star"></i> 
+                                                }
+                                                else
+                                                {
+                                                    <i class="fa fa-star-o"></i> 
+                                                }
+                                            }
+                                        </span>
+
+                                        <span class="review-count">
+                                            (@product.ReviewCount reviews)
+                                        </span>
+                                    </div>
+
+
                                     <form asp-controller="Product" asp-action="AddToCart" method="post" class="mt-2 d-flex align-items-center">
                                         <input type="hidden" name="id" value="@product.Id" />
                                         <input type="number" name="quantity" value="1" min="1" style="width:50px; margin-right:10px;" />
-                                        <button type="submit" class="site-btn">
-                                            <i class="fa fa-shopping-cart"></i> Add to Cart
-                                        </button>
+                                        <button type="submit" class="site-btn"><i class="fa fa-shopping-cart"></i> Add to Cart</button>
                                     </form>
                                 </div>
+
                             </div>
                         </div>
                     }
                 </div>
 
-                @* Sayfalama *@
+                <!-- Pagination -->
                 <div class="product__pagination mt-4">
                     <a href="#">1</a>
                     <a href="#">2</a>
                     <a href="#"><i class="fa fa-long-arrow-right"></i></a>
                 </div>
+
             </div>
         </div>
     </div>
@@ -146,11 +175,11 @@
 
 @section Scripts {
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
             var buttons = document.querySelectorAll(".favorite-btn");
 
-            buttons.forEach(function(btn) {
-                btn.addEventListener("click", function(e) {
+            buttons.forEach(function (btn) {
+                btn.addEventListener("click", function (e) {
                     e.preventDefault();
 
                     var productId = this.getAttribute("data-product-id");
@@ -163,21 +192,29 @@
                         },
                         body: "productId=" + productId
                     })
-                    .then(response => {
-                        if(response.ok){
-                            // Header favori sayýsýný güncelle
-                            var countSpan = document.getElementById("header-favorites-count");
-                            if(countSpan){
-                                countSpan.textContent = parseInt(countSpan.textContent || "0") + 1;
+                        .then(response => {
+                            if (response.ok) {
+                                var countSpan = document.getElementById("header-favorites-count");
+                                if (countSpan) {
+                                    countSpan.textContent = parseInt(countSpan.textContent || "0") + 1;
+                                }
+                                alert("Product added to favorites!");
+                            } else {
+                                alert("Failed to add favorite");
                             }
-                            alert("Product added to favorites!");
-                        } else {
-                            alert("Failed to add favorite");
-                        }
-                    })
-                    .catch(err => console.error(err));
+                        })
+                        .catch(err => console.error(err));
                 });
             });
         });
     </script>
 }
+
+<style>
+    .product__item__pic {
+        width: 100%;
+        height: 250px;
+        background-size: cover;
+        background-position: center center;
+    }
+</style>

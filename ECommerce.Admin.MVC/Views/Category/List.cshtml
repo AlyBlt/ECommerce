@@ -1,0 +1,59 @@
+﻿@model IEnumerable<ECommerce.Data.Entities.CategoryEntity>
+
+@{
+    ViewData["Title"] = "Category List";
+    Layout = "_SbAdminLayout";
+}
+
+<h1 class="h3 mb-4 text-gray-800">Category List</h1>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">All Categories</h6>
+
+        <a asp-action="Create" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus"></i> Create New
+        </a>
+    </div>
+
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                <thead class="thead-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Color</th>
+                        <th>Icon</th>
+                        <th style="width: 180px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.Id</td>
+                            <td>@item.Name</td>
+                            <td>
+                                <span style="display:inline-block;width:20px;height:20px;background-color:@item.Color;border:1px solid #ccc;"></span>
+                                @item.Color
+                            </td>
+                            <td><i class="@item.IconCssClass"></i> @item.IconCssClass</td>
+                            <td>
+                                <!-- Edit -->
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+
+                                <!-- Delete -->
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

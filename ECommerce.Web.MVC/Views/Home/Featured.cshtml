@@ -1,0 +1,57 @@
+﻿@model ECommerce.Application.ViewModels.FeaturedProductsViewModel
+
+<div class="featured-products">
+    <!-- Popüler Ürünler -->
+    <section class="featured-products__popular">
+        <h2>Popular Products</h2>
+        <div class="row">
+            @foreach (var product in Model.PopularProducts)
+            {
+                <div class="col-lg-3 col-md-4 col-sm-6">
+                    <div class="product-item">
+                        <img src="@product.ImageUrl" alt="@product.Name" />
+                        <h4>@product.Name</h4>
+                        <p>@product.Price.ToString("C")</p>
+                        <p>@product.Category</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <!-- İndirimli Ürünler -->
+    <section class="featured-products__discounted">
+        <h2>Discounted Products</h2>
+        <div class="row">
+            @foreach (var product in Model.DiscountedProducts)
+            {
+                <div class="col-lg-3 col-md-4 col-sm-6">
+                    <div class="product-item">
+                        <img src="@product.ImageUrl" alt="@product.Name" />
+                        <h4>@product.Name</h4>
+                        <p>@product.Price.ToString("C") <span class="old-price">@product.OldPrice?.ToString("C")</span></p>
+                        <p>@product.Category</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <!-- Yeni Gelen Ürünler -->
+    <section class="featured-products__new-arrivals">
+        <h2>New Arrival Products</h2>
+        <div class="row">
+            @foreach (var product in Model.NewArrivalProducts)
+            {
+                <div class="col-lg-3 col-md-4 col-sm-6">
+                    <div class="product-item">
+                        <img src="@product.ImageUrl" alt="@product.Name" />
+                        <h4>@product.Name</h4>
+                        <p>@product.Price.ToString("C")</p>
+                        <p>@product.Category</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+</div>

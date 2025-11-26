@@ -1,4 +1,4 @@
-﻿@model ECommerceWeb.MVC.Models.HomeViewModels.ProductListingModel
+﻿@model ECommerce.Application.ViewModels.ProductListingViewModel
 @{
     ViewData["Title"] = "Edit Product";
 }
@@ -7,23 +7,52 @@
     <div class="container">
         <h2>Edit Product</h2>
         <form asp-action="Edit" method="post">
-            <input type="hidden" name="Id" value="@Model.Id" />
-            <div class="form-group">
-                <input type="text" class="form-control" name="Name" value="@Model.Name" required />
+            <input type="hidden" asp-for="Id" />
+
+            <!-- Product Name -->
+            <div class="form-group mb-3">
+                <label>Name<span class="text-danger">*</span></label>
+                <input type="text" class="form-control" asp-for="Name" required />
+                @Html.ValidationMessageFor(m => m.Name, "", new { @class = "text-danger" })
             </div>
-            <div class="form-group">
-                <input type="text" class="form-control" name="Category" value="@Model.Category" required />
+
+            <!-- Category -->
+            <div class="form-group mb-3">
+                <label>Category<span class="text-danger">*</span></label>
+                <select class="form-control" asp-for="CategoryId" asp-items="@(new SelectList(new[]{
+                        new { Id = 1, Name = "Category 1"},
+                        new { Id = 2, Name = "Category 2"},
+                        new { Id = 3, Name = "Category 3"}
+                 }, "Id", "Name"))">
+                </select>
+                @Html.ValidationMessageFor(m => m.CategoryId, "", new { @class = "text-danger" })
             </div>
-            <div class="form-group">
-                <input type="number" class="form-control" name="Price" value="@Model.Price" required />
+
+            <!-- Price -->
+            <div class="form-group mb-3">
+                <label>Price<span class="text-danger">*</span></label>
+                <input type="number" class="form-control" asp-for="Price" min="0" step="0.01" required />
+                @Html.ValidationMessageFor(m => m.Price, "", new { @class = "text-danger" })
             </div>
-            <div class="form-group">
-                <input type="number" class="form-control" name="OldPrice" value="@Model.OldPrice" />
+
+            <!-- Old Price -->
+            <div class="form-group mb-3">
+                <label>Old Price</label>
+                <input type="number" class="form-control" asp-for="OldPrice" min="0" step="0.01" />
             </div>
-            <div class="form-group">
-                <input type="text" class="form-control" name="ImageUrl" value="@Model.ImageUrl" required />
+
+            <!-- Image URL -->
+            <div class="form-group mb-3">
+                <label>Image URL<span class="text-danger">*</span></label>
+                <input type="text" class="form-control" asp-for="ImageUrl" required />
+                @Html.ValidationMessageFor(m => m.ImageUrl, "", new { @class = "text-danger" })
             </div>
+
             <button type="submit" class="site-btn">Save Changes</button>
         </form>
     </div>
 </section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

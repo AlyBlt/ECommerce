@@ -1,5 +1,4 @@
-﻿@using ECommerceWeb.MVC.Models.OrderviewModels
-@model Order
+﻿@model ECommerce.Application.ViewModels.OrderDetailsViewModel
 @{
     ViewData["Title"] = "Order Details";
     Layout = "~/Views/Shared/_OganiLayout.cshtml";
@@ -22,7 +21,7 @@
                             <strong>Order No:</strong> @Model.Id
                         </div>
                         <div class="col-md-6 mb-2">
-                            <strong>Date:</strong> @Model.CreatedDate.ToString("dd.MM.yyyy HH:mm")
+                            <strong>Date:</strong> @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")
                         </div>
                         <div class="col-md-6 mb-2">
                             <strong>Payment:</strong> @Model.PaymentMethod
@@ -59,20 +58,11 @@
                             <div class="profile__info-box">@Model.UserInformation.Phone</div>
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label>Zip Code</label>
-                            <div class="profile__info-box">@Model.UserInformation.ZipCode</div>
-                        </div>
-
                         <div class="col-md-12 mb-3">
                             <label>Address</label>
                             <div class="profile__info-box">@Model.UserInformation.Address</div>
                         </div>
 
-                        <div class="col-md-12 mb-3">
-                            <label>City</label>
-                            <div class="profile__info-box">@Model.UserInformation.City</div>
-                        </div>
                     </div>
 
                 </div>
@@ -100,10 +90,10 @@
                                 <tr>
                                     <td class="shoping__cart__item">
                                         <img src="~/img/cart/cart-1.jpg" alt="">
-                                        <h5>@item.Name</h5>
+                                        <h5>@item.ProductName</h5>
                                     </td>
                                     <td class="shoping__cart__quantity">@item.Quantity</td>
-                                    <td class="shoping__cart__price">@item.Price ₺</td>
+                                    <td class="shoping__cart__price">@item.UnitPrice ₺</td>
                                     <td class="shoping__cart__total">@item.TotalPrice ₺</td>
                                 </tr>
                             }

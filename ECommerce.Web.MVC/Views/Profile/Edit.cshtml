@@ -1,4 +1,4 @@
-﻿@model ECommerceWeb.MVC.Models.OrderviewModels.UserInformation
+﻿@model ECommerce.Application.ViewModels.UserEditViewModel
 @{
     ViewData["Title"] = "Edit Profile";
 }
@@ -39,9 +39,14 @@
                         <div class="row">
 
                             <div class="col-md-6 mb-3">
-                                <label>Full Name</label>
-                                <input asp-for="FullName" class="form-control" />
-                                <span asp-validation-for="FullName" class="text-danger small"></span>
+                                <label>First Name</label>
+                                <input asp-for="FirstName" class="form-control" />
+                                <span asp-validation-for="FirstName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>Last Name</label>
+                                <input asp-for="LastName" class="form-control" />
+                                <span asp-validation-for="LastName" class="text-danger small"></span>
                             </div>
 
                             <div class="col-md-6 mb-3">
@@ -55,22 +60,10 @@
                                 <span asp-validation-for="Phone" class="text-danger small"></span>
                             </div>
 
-                            <div class="col-md-6 mb-3">
-                                <label>Zip Code</label>
-                                <input asp-for="ZipCode" class="form-control" />
-                                <span asp-validation-for="ZipCode" class="text-danger small"></span>
-                            </div>
-
                             <div class="col-md-12 mb-3">
                                 <label>Address</label>
                                 <input asp-for="Address" class="form-control" />
                                 <span asp-validation-for="Address" class="text-danger small"></span>
-                            </div>
-
-                            <div class="col-md-12 mb-3">
-                                <label>City</label>
-                                <input asp-for="City" class="form-control" />
-                                <span asp-validation-for="City" class="text-danger small"></span>
                             </div>
 
                             <div class="col-md-12 text-end mt-4">

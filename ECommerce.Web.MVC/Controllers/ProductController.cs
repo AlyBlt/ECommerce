@@ -1,149 +1,174 @@
-﻿using ECommerceWeb.MVC.Helpers;
-using ECommerceWeb.MVC.Models.CartViewModels;
-using ECommerceWeb.MVC.Models.HomeViewModels;
-using ECommerceWeb.MVC.Models.ProductViewModels;
+﻿using ECommerce.Application.Interfaces;
+using ECommerce.Application.ViewModels;
+using ECommerce.Data.Entities;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 
-namespace ECommerceWeb.MVC.Controllers
+namespace ECommerce.Web.Mvc.Controllers
 {
     public class ProductController : Controller
     {
-        // Session üzerinden ürün listesi
-        private List<ProductListingModel> GetProducts()
+        private readonly IProductService _productService;
+        private const string AdminSessionKey = "IsAdmin";
+
+        public ProductController(IProductService productService)
         {
-            var products = HttpContext.Session.GetObjectFromJson<List<ProductListingModel>>("Products");
-            if (products == null)
+            _productService = productService;
+        }
+
+        // ---------------- SESSION HELPERS ----------------
+        private bool IsAdmin() => HttpContext.Session.GetInt32(AdminSessionKey) == 1;
+
+        private int? GetCurrentUserId()
+        {
+            const string SessionUserIdKey = "UserId";
+            return HttpContext.Session.GetInt32(SessionUserIdKey);
+        }
+
+        // ---------------- HELPER: ENTITY → VIEWMODEL ----------------
+        private ProductListingViewModel MapToViewModel(ProductEntity product)
+        {
+            return new ProductListingViewModel
             {
-                products = new List<ProductListingModel>
+                Id = product.Id,
+                Name = product.Name,
+                Category = product.Category?.Name ?? "",
+                Price = product.Price,
+                OldPrice = null,
+                ImageUrl = "", // DB’de yoksa placeholder
+                Comments = product.Comments?.Select(c => new CommentViewModel
                 {
-                    new ProductListingModel { Id = 1, Name = "Crab Pool Security", Category="Dried Fruit", Price=30, ImageUrl="/img/product/product-1.jpg", Comments = new List<ProductComment>() },
-                    new ProductListingModel { Id = 2, Name = "Vegetables’ Package", Category="Vegetables", Price=30, ImageUrl="/img/product/product-2.jpg", Comments = new List<ProductComment>() },
-                    new ProductListingModel { Id = 3, Name = "Mixed Fruits", Category="Dried Fruit", Price=30, ImageUrl="/img/product/product-3.jpg", Comments = new List<ProductComment>() }
-                };
-                HttpContext.Session.SetObjectAsJson("Products", products);
-            }
-            return products;
+                    Id = c.Id,
+                    UserName = c.User != null ? $"{c.User.FirstName} {c.User.LastName}" : "Anonymous",
+                    ProductName = product.Name,
+                    Text = c.Text,
+                    Rating = c.StarCount,
+                    IsApproved = c.IsConfirmed
+                }).ToList() ?? new List<CommentViewModel>(),
+                InCart = false // Session cart’a göre güncellenebilir
+            };
         }
 
-        private void SaveProducts(List<ProductListingModel> products)
+        // ---------------- LISTING ----------------
+        public IActionResult Listing()
         {
-            HttpContext.Session.SetObjectAsJson("Products", products);
+            var products = _productService.GetAll()
+                .Select(MapToViewModel)
+                .ToList();
+
+            return View(products);
         }
 
-        // Ürün oluşturma
+        // ---------------- DETAILS ----------------
+        public IActionResult Details(int id)
+        {
+            var product = _productService.Get(id);
+            if (product == null) return NotFound();
+
+            var model = MapToViewModel(product);
+            return View(model);
+        }
+
+        // ---------------- CREATE ----------------
         public IActionResult Create()
         {
+            if (!IsAdmin()) return Forbid();
             return View();
         }
 
         [HttpPost]
-        public IActionResult Create(ProductListingModel model)
+        public IActionResult Create(ProductListingViewModel model)
         {
+            if (!IsAdmin()) return Forbid();
             if (!ModelState.IsValid) return View(model);
 
-            var products = GetProducts();
-            model.Id = products.Any() ? products.Max(p => p.Id) + 1 : 1;
-            model.Comments = new List<ProductComment>();
-            products.Add(model);
-            SaveProducts(products);
-
-            return RedirectToAction("Listing", "Home");
-        }
-
-        // Ürün düzenleme
-        public IActionResult Edit(int id)
-        {
-            var product = GetProducts().FirstOrDefault(p => p.Id == id);
-            if (product == null) return NotFound();
-            return View(product);
-        }
-
-        [HttpPost]
-        public IActionResult Edit(ProductListingModel model)
-        {
-            if (!ModelState.IsValid) return View(model);
-
-            var products = GetProducts();
-            var product = products.FirstOrDefault(p => p.Id == model.Id);
-            if (product == null) return NotFound();
-
-            product.Name = model.Name;
-            product.Category = model.Category;
-            product.Price = model.Price;
-            product.OldPrice = model.OldPrice;
-            product.ImageUrl = model.ImageUrl;
-
-            SaveProducts(products);
-            return RedirectToAction("Listing", "Home");
-        }
-
-        // Ürün silme
-        public IActionResult Delete(int id)
-        {
-            var products = GetProducts();
-            var product = products.FirstOrDefault(p => p.Id == id);
-            if (product != null)
+            var entity = new ProductEntity
             {
-                products.Remove(product);
-                SaveProducts(products);
-            }
-            return RedirectToAction("Listing", "Home");
-        }
-
-        // Ürüne yorum ekleme ve yıldız
-        [HttpPost]
-        public IActionResult Comment(int productId, string userName, string commentText, int rating)
-        {
-            var products = GetProducts();
-            var product = products.FirstOrDefault(p => p.Id == productId);
-            if (product == null) return NotFound();
-
-            product.Comments.Add(new ProductComment
-            {
-                UserName = userName,
-                CommentText = commentText,
-                Rating = rating,
-                CreatedAt = DateTime.Now
-            });
-
-            SaveProducts(products);
-
-            // ProductDetail HomeController’da olduğu için
-            return RedirectToAction("ProductDetail", "Home", new { id = productId });
-        }
-
-        // Sepete ekleme
-        [HttpPost]
-        public IActionResult AddToCart(int id, int quantity = 1)
-        {
-            // Cart’ı session’dan al
-            var cart = SessionHelper.GetCart(HttpContext);
-
-            // Ürünü bul
-            var product = GetProducts().FirstOrDefault(p => p.Id == id);
-            if (product == null) return NotFound();
-
-            // CartItem oluştur
-            var item = new CartItem
-            {
-                ProductId = product.Id,
-                Name = product.Name,
-                Price = product.Price,
-                Quantity = quantity
+                Name = model.Name,
+                CategoryId = 1, // Sabit kategori örneği
+                Price = model.Price,
+                CreatedAt = DateTime.Now,
+                Enabled = true
             };
 
-            cart.AddItem(item);
+            _productService.Add(entity);
+            return RedirectToAction("Listing");
+        }
 
-            // Cart’ı session’a kaydet
-            SessionHelper.SaveCart(HttpContext, cart);
+        // ---------------- EDIT ----------------
+        public IActionResult Edit(int id)
+        {
+            if (!IsAdmin()) return Forbid();
+            var entity = _productService.Get(id);
+            if (entity == null) return NotFound();
 
-            // Sepet sayısı ve toplam fiyatını güncelle
-            HttpContext.Session.SetInt32("CartCount", cart.Items.Count);
-            HttpContext.Session.SetInt32("CartTotal", (int)cart.TotalPrice);
+            var model = MapToViewModel(entity);
+            return View(model);
+        }
 
-            TempData["Message"] = $"{product.Name} added to cart!";
-            return RedirectToAction("Listing", "Home");
+        [HttpPost]
+        public IActionResult Edit(ProductListingViewModel model)
+        {
+            if (!IsAdmin()) return Forbid();
+            if (!ModelState.IsValid) return View(model);
+
+            var entity = _productService.Get(model.Id);
+            if (entity == null) return NotFound();
+
+            entity.Name = model.Name;
+            entity.Price = model.Price;
+
+            _productService.Update(entity);
+            return RedirectToAction("Listing");
+        }
+
+        // ---------------- DELETE ----------------
+        public IActionResult Delete(int id)
+        {
+            if (!IsAdmin()) return Forbid();
+            _productService.Delete(id);
+            return RedirectToAction("Listing");
+        }
+
+        // ---------------- TOGGLE STATUS ----------------
+        public IActionResult ToggleStatus(int id)
+        {
+            if (!IsAdmin()) return Forbid();
+            _productService.ToggleStatus(id);
+            return RedirectToAction("Listing");
+        }
+
+        // ---------------- ADD COMMENT ----------------
+        [HttpPost]
+        public IActionResult Comment(int productId, CommentViewModel model)
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+                return RedirectToAction("Login", "Auth");
+
+            var product = _productService.Get(productId);
+            if (product == null)
+                return NotFound();
+
+            var commentEntity = new ProductCommentEntity
+            {
+                ProductId = productId,
+                UserId = userId.Value,
+                Text = model.Text,
+                StarCount = model.Rating,
+                IsConfirmed = false, // Admin onayı bekler
+                CreatedAt = DateTime.Now
+            };
+
+            if (product.Comments == null)
+                product.Comments = new List<ProductCommentEntity>();
+
+            product.Comments.Add(commentEntity);
+            _productService.Update(product);
+
+            return RedirectToAction("Details", new { id = productId });
         }
     }
 }

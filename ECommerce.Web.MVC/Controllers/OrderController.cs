@@ -1,127 +1,217 @@
-﻿using ECommerceWeb.MVC.Models.CartViewModels;
-using ECommerceWeb.MVC.Models.OrderviewModels;
+﻿using ECommerce.Application.Interfaces;
+using ECommerce.Application.ViewModels;
+using ECommerce.Data.Entities;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
-namespace ECommerceWeb.MVC.Controllers
+namespace ECommerce.Web.Mvc.Controllers
 {
     public class OrderController : Controller
     {
-        // Session keys
-        private const string SessionCartKey = "Cart"; // CartController ile aynı key  // For cart information
-        private const string SessionOrderKey = "LastOrder";  // For last order information
+        private const string SessionCartKey = "Cart";
+        private const string SessionUserInfoKey = "UserInfo";
 
-        // Retrieve cart from session
-        private Cart GetCart()
+        private readonly IOrderService _orderService;
+        private readonly IUserService _userService;
+        private readonly ICartService _cartService;
+
+        public OrderController(IOrderService orderService, IUserService userService, ICartService cartService)
         {
-            var json = HttpContext.Session.GetString(SessionCartKey);  // Get JSON string from session
-            if (string.IsNullOrEmpty(json))
-                return new Cart();  // Return an empty cart if session is empty
-
-            // Deserialize the JSON into a Cart object
-            return JsonSerializer.Deserialize<Cart>(json);
+            _orderService = orderService;
+            _userService = userService;
+            _cartService = cartService;
         }
 
-        // User information page
+        private int? GetUserIdFromSession() => HttpContext.Session.GetInt32("UserId");
+
+        private CartViewModel GetCartFromSession()
+        {
+            var json = HttpContext.Session.GetString(SessionCartKey);
+            if (string.IsNullOrEmpty(json)) return new CartViewModel();
+            return JsonSerializer.Deserialize<CartViewModel>(json) ?? new CartViewModel();
+        }
+
+        // ---------------- CREATE ORDER ----------------
         [HttpGet]
         public IActionResult Create()
         {
-            // Check the cart
-            var cartJson = HttpContext.Session.GetString(SessionCartKey);
-            var cart = string.IsNullOrEmpty(cartJson) ? new Cart() : JsonSerializer.Deserialize<Cart>(cartJson);
+            var userId = GetUserIdFromSession();
+            UserInformationViewModel model;
 
-            //if (cart.Items.Count == 0)
-            //{
-            //    TempData["Error"] = "Your cart is empty. You cannot proceed to the payment page!";
-            //    return RedirectToAction("Index", "Cart"); // Redirect to the cart page
-            //}
+            if (userId.HasValue)
+            {
+                // Kullanıcı login ise DB’den bilgileri al
+                var user = _userService.Get(userId.Value); // DB’den çekiyoruz
+                model = new UserInformationViewModel
+                {
+                    FullName = $"{user.FirstName} {user.LastName}", // Burada FullName oluşturuluyor
+                    Address = user.Address,
+                    Phone = user.Phone,
+                    Email = user.Email
+                };
+            }
+            else
+            {
+                // Misafir: session’dan al
+                var json = HttpContext.Session.GetString(SessionUserInfoKey);
+                model = string.IsNullOrEmpty(json)
+                    ? new UserInformationViewModel()
+                    : JsonSerializer.Deserialize<UserInformationViewModel>(json) ?? new UserInformationViewModel();
+            }
 
-            return View(new UserInformation());
+            return View(model);
         }
 
         [HttpPost]
-        public IActionResult Create(UserInformation model)
+        public IActionResult Create(UserInformationViewModel model)
         {
-            // If form validation fails, show the form again
-            //if (!ModelState.IsValid)
-            //    return View(model);
-            // Clear any previous ModelState errors
-            ModelState.Clear();//!!!  sadece “view’e eski değer gelmesin” diye kullandık denemek için, validation çözmek için değil.
+            if (!ModelState.IsValid) return View(model);
 
-            // Save user information to session (in JSON format)
-            HttpContext.Session.SetString("UserInfo", JsonSerializer.Serialize(model));
+            var userId = GetUserIdFromSession();
+            if (!userId.HasValue)
+            {
+                // Misafir: session’a kaydet
+                HttpContext.Session.SetString(SessionUserInfoKey, JsonSerializer.Serialize(model));
+            }
+            else
+            {
+                // İstersen login kullanıcı için DB’de güncelleme yapılabilir
+            }
 
-            // Redirect to the payment page
-            return RedirectToAction("Payment"); 
+            return RedirectToAction("Payment");
         }
 
-        // Payment method selection page
+        // ---------------- PAYMENT ----------------
         [HttpGet]
         public IActionResult Payment()
         {
-            // Show the payment form with an empty PaymentInformation model
-            return View(new PaymentInformation());
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var cartJson = HttpContext.Session.GetString("Cart");
+            var cart = string.IsNullOrEmpty(cartJson) ? null : JsonSerializer.Deserialize<CartViewModel>(cartJson);
+
+            if (!userId.HasValue && (cart == null || !cart.Items.Any()))
+            {
+                TempData["Message"] = "You must have items in your cart to proceed to payment.";
+                return RedirectToAction("Index", "Cart");
+            }
+
+            return View(new PaymentInformationViewModel()); // default PaymentMethod = "Credit Card"
         }
 
         [HttpPost]
-        public IActionResult Payment(PaymentInformation model)
+        public IActionResult Payment(PaymentInformationViewModel model)
         {
-            
-            // If payment method is not selected, show an error message
-            if (model.PaymentMethod == null)
+            if (!ModelState.IsValid)
             {
-                ModelState.AddModelError("", "You must select a payment method.");
                 return View(model);
             }
 
-            // Retrieve user information from session
-            var userJson = HttpContext.Session.GetString("UserInfo");
-            var userInfo = JsonSerializer.Deserialize<UserInformation>(userJson);
+            var userId = GetUserIdFromSession();
+            CartViewModel cart;
 
-            // Get the cart information
-            var cart = GetCart();
-            
-
-            // Create an order object
-            var order = new Order
+            if (userId.HasValue)
             {
-                Id = new Random().Next(100000, 999999), // Random order number
-                UserInformation = userInfo,
-                Items = cart.Items.Select(x => new OrderItem
+                // Login: DB’den cart al
+                var cartItems = _cartService.GetCartItems(userId.Value);
+                cart = new CartViewModel
                 {
-                    ProductId = x.ProductId,
-                    Name = x.Name,
-                    Price = x.Price,
-                    Quantity = x.Quantity
-                }).ToList(),
-                PaymentMethod = model.PaymentMethod
-            };
+                    Items = cartItems.Select(c => new CartItemViewModel
+                    {
+                        ProductId = c.ProductId,
+                        Name = c.Product.Name,
+                        Price = c.Product.Price,
+                        Quantity = c.Quantity
+                    }).ToList()
+                };
+            }
+            else
+            {
+                // Misafir: session’dan cart al
+                cart = GetCartFromSession();
+            }
 
-            // Save the order to session
-            HttpContext.Session.SetString(SessionOrderKey, JsonSerializer.Serialize(order));
+            if (!cart.Items.Any())
+            {
+                TempData["Message"] = "Your cart is empty.";
+                return RedirectToAction("Index", "Cart");
+            }
 
-            // Clear the cart (after creating the order)
-            cart.Clear();
-            HttpContext.Session.SetString(SessionCartKey, JsonSerializer.Serialize(cart));
+            // Kullanıcı bilgilerini al
+            UserInformationViewModel userInfo;
+            if (userId.HasValue)
+            {
+                var user = _userService.Get(userId.Value); // DB’den çekiyoruz
+                userInfo = new UserInformationViewModel
+                {
+                    FullName = $"{user.FirstName} {user.LastName}", // Burada FullName oluşturuluyor
+                    Address = user.Address,
+                    Phone = user.Phone,
+                    Email = user.Email
+                };
+            }
+            else
+            {
+                var json = HttpContext.Session.GetString(SessionUserInfoKey);
+                userInfo = string.IsNullOrEmpty(json)
+                    ? new UserInformationViewModel()
+                    : JsonSerializer.Deserialize<UserInformationViewModel>(json) ?? new UserInformationViewModel();
+            }
 
-            // Redirect to the order details page
-            return RedirectToAction("Details");
+            // DB’ye kaydet
+            var cartItemsEntities = cart.Items.Select(i => new CartItemEntity
+            {
+                ProductId = i.ProductId,
+                Quantity = i.Quantity,
+                CreatedAt = DateTime.Now
+            }).ToList();
+
+            var order = _orderService.CreateOrder(
+                userId ?? 0, // misafir için 0 veya özel guestId mantığı
+                userInfo.Address,
+                model.PaymentMethod,
+                cartItemsEntities
+            );
+
+            // Cart temizle
+            if (userId.HasValue)
+                _cartService.ClearCart(userId.Value);
+            else
+            {
+                cart.Items.Clear();
+                HttpContext.Session.SetString(SessionCartKey, JsonSerializer.Serialize(cart));
+            }
+
+            return RedirectToAction("Details", new { id = order.Id });
         }
 
-        // Order details page
+        // ---------------- ORDER DETAILS ----------------
         [HttpGet]
-        [Route("order-details")]
-        public IActionResult Details()
+        [Route("order-details/{id}")]
+        public IActionResult Details(int id)
         {
-            // Retrieve the last order from session
-            var json = HttpContext.Session.GetString(SessionOrderKey);
-            // If no order exists, redirect to the homepage
-            if (json == null)
+            var userId = GetUserIdFromSession();
+            if (!userId.HasValue) return RedirectToAction("Login", "Auth");
+
+            var order = _orderService.GetOrder(id);
+            if (order == null || order.UserId != userId.Value)
                 return RedirectToAction("Index", "Home");
 
-            // Deserialize the JSON into an Order object and send it to the view
-            var order = JsonSerializer.Deserialize<Order>(json);
             return View(order);
+        }
+
+        // ---------------- MY ORDERS ----------------
+        [HttpGet]
+        [Route("profile/my-orders")]
+        public IActionResult MyOrders()
+        {
+            var userId = GetUserIdFromSession();
+            if (!userId.HasValue) return RedirectToAction("Login", "Auth");
+
+            var orders = _orderService.GetOrdersByUser(userId.Value);
+            ViewBag.Empty = !orders.Any();
+            ViewBag.PageTitle = "My Orders";
+
+            return View(orders);
         }
     }
 }

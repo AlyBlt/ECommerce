@@ -12,7 +12,7 @@
                 <div class="col-lg-6 col-md-6">
                     <div class="header__top__left">
                         <ul>
-                            <li><i class="fa fa-envelope"></i> hello@colorlib.com</li>
+                            <li><i class="fa fa-envelope"></i> apple@helloworld.com</li>
                             <li>Free Shipping for all Order of $99</li>
                         </ul>
                     </div>
@@ -45,11 +45,11 @@
                             @{
                                 var userJson = Context.Session.GetString("UserInfo");
                                 bool isLoggedIn = !string.IsNullOrEmpty(userJson);
-                                ECommerceWeb.MVC.Models.OrderviewModels.UserInformation user = null;
+                                ECommerce.Application.ViewModels.UserInformationViewModel user = null;
 
                                 if (isLoggedIn)
                                 {
-                                    user = System.Text.Json.JsonSerializer.Deserialize<ECommerceWeb.MVC.Models.OrderviewModels.UserInformation>(userJson);
+                                    user = System.Text.Json.JsonSerializer.Deserialize<ECommerce.Application.ViewModels.UserInformationViewModel>(userJson);
                                 }
                             }
 
@@ -78,8 +78,10 @@
         <div class="row">
             <!-- Logo -->
             <div class="col-lg-3 col-md-3 col-sm-6">
-                <div class="header__logo">
-                    <a href="/"><img src="~/img/logo.png" alt="Ogani Logo"></a>
+                <div class="header__logo d-flex justify-content-center align-items-center" style="height: 100px;">
+                    <a href="/">
+                        <img src="~/img/logo.png?v2" alt="HelloWorld Logo" style="width:100px; height:auto; border-radius:5px;">
+                    </a>
                 </div>
             </div>
 

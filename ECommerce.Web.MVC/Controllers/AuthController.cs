@@ -1,30 +1,30 @@
-﻿using ECommerceWeb.MVC.Models.AuthViewModels;
-using ECommerceWeb.MVC.Models.OrderviewModels;
+﻿using ECommerce.Application.Interfaces;
+using ECommerce.Application.Services;
+using ECommerce.Application.ViewModels;
+using ECommerce.Data.Entities;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 
-namespace ECommerceWeb.MVC.Controllers
+namespace ECommerce.Web.MVC.Controllers
 {
     public class AuthController : Controller
     {
-        private const string SessionUserKey = "UserInfo";
+        private readonly IUserService _userService;
+        private const string SessionUserId = "UserId";
 
-        // Kayıt olan kullanıcılar burada tutulacak (demo)
-        public static List<UserInformation> Users = new List<UserInformation>();
+        public AuthController(IUserService userService)
+        {
+            _userService = userService;
+        }
 
-        private bool CheckLogin() => HttpContext.Session.GetString(SessionUserKey) != null;
+        private bool IsLoggedIn() => HttpContext.Session.GetInt32(SessionUserId) != null;
 
-        // GET: Login
         [Route("account/login")]
         public IActionResult Login()
         {
-            if (CheckLogin())
-                return RedirectToAction("Details", "Profile");
-
+            if (IsLoggedIn()) return RedirectToAction("Details", "Profile");
             return View();
         }
 
-        // POST: Login
         [HttpPost]
         [Route("account/login")]
         public IActionResult Login(LoginViewModel model)
@@ -32,47 +32,25 @@ namespace ECommerceWeb.MVC.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            //  1) Önce kayıtlı kullanıcılar listesinde ara
-            var existingUser = AuthController.Users
-                .FirstOrDefault(u => u.Email == model.Email && u.Password == model.Password);
+            var user = _userService.GetByEmail(model.Email);
 
-            if (existingUser != null)
+            if (user == null || user.Password != model.Password)
             {
-                // kullanıcı bulundu → session'a yaz
-                HttpContext.Session.SetString(SessionUserKey, JsonSerializer.Serialize(existingUser));
-                return RedirectToAction("Details", "Profile");
+                ModelState.AddModelError("", "Incorrect email or password");
+                return View(model);
             }
 
-            //  2) Demo user login
-            if (model.Email == "test@test.com" && model.Password == "1234")
-            {
-                var demoUser = new UserInformation
-                {
-                    FullName = "Test User",
-                    Email = model.Email,
-                    Password = model.Password
-                };
-
-                HttpContext.Session.SetString(SessionUserKey, JsonSerializer.Serialize(demoUser));
-                return RedirectToAction("Details", "Profile");
-            }
-
-            // 3) Hatalı giriş
-            ModelState.AddModelError("", "Incorrect email or password");
-            return View(model);
+            HttpContext.Session.SetInt32(SessionUserId, user.Id);
+            return RedirectToAction("Details", "Profile");
         }
 
-        // GET: Register
         [Route("account/register")]
         public IActionResult Register()
         {
-            if (CheckLogin())
-                return RedirectToAction("Details", "Profile");
-
+            if (IsLoggedIn()) return RedirectToAction("Details", "Profile");
             return View();
         }
 
-        // POST: Register
         [HttpPost]
         [Route("account/register")]
         public IActionResult Register(RegisterViewModel model)
@@ -80,33 +58,36 @@ namespace ECommerceWeb.MVC.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            // Yeni kullanıcı oluştur
-            var user = new UserInformation
+            // Email tekrar kontrolü
+            var existing = _userService.GetByEmail(model.Email);
+            if (existing != null)
             {
-                FullName = model.Username,
-                Email = model.Email,
-                Password = model.Password,
-                Phone = "555-123-4567",
-                Address = "Demo Address",
-                City = "Demo City",
-                ZipCode = "00000"
-            };
+                ModelState.AddModelError("", "This email is already used.");
+                return View(model);
+            }
 
-            // KULLANICIYI LİSTEYE EKLE
-            Users.Add(user);
+            // Register → DB’ye ekle
+            var user = _userService.Register(
+                model.Email,
+                model.Username.Split(" ")[0],
+                model.Username.Contains(" ") ? model.Username.Split(" ")[1] : "",
+                model.Password
+            );
 
-            // Giriş yapmış gibi session’a yaz
-            HttpContext.Session.SetString(SessionUserKey, JsonSerializer.Serialize(user));
+            // Session’a sadece UserId yazılır
+            HttpContext.Session.SetInt32(SessionUserId, user.Id);
 
             return RedirectToAction("Details", "Profile");
         }
 
-        // Logout
         [Route("account/logout")]
-        public IActionResult LogOut()
+        public IActionResult Logout()
         {
             HttpContext.Session.Clear();
             return RedirectToAction("Login");
         }
+
+        //Forgot password e bak demo bir şey yapılabilir mi
+
     }
 }

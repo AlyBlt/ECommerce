@@ -1,0 +1,26 @@
+﻿@model ECommerce.Data.Entities.UserEntity
+
+@{
+    ViewData["Title"] = "Approve Seller";
+    Layout = "_SbAdminLayout";
+}
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-warning">Approve Seller</h6>
+    </div>
+    <div class="card-body">
+        <p>
+            Are you sure you want to approve <strong>@Model.FirstName @Model.LastName</strong> as a seller?
+        </p>
+
+        <form asp-action="ApproveConfirmed" asp-route-id="@Model.Id" method="post">
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-check"></i> Approve
+            </button>
+            <a asp-action="List" asp-controller="User" class="btn btn-secondary ml-2">
+                Cancel
+            </a>
+        </form>
+    </div>
+</div>

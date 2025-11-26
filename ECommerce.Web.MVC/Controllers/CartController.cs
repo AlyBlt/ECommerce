@@ -1,103 +1,123 @@
-﻿using ECommerceWeb.MVC.Helpers;
-using ECommerceWeb.MVC.Models;
-using ECommerceWeb.MVC.Models.CartViewModels;
-using ECommerceWeb.MVC.Models.FavoritesViewModels;
+﻿using ECommerce.Application.Interfaces;
+using ECommerce.Application.ViewModels;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 
-namespace ECommerceWeb.MVC.Controllers
+namespace ECommerce.Web.Mvc.Controllers
 {
     public class CartController : Controller
     {
-        // View the cart page (GET request)
-        public IActionResult Index()
+        private readonly ICartService _cartService;
+        private readonly IUserService _userService;
+        private const string SessionUserId = "UserId";
+
+        public CartController(ICartService cartService, IUserService userService)
         {
-            var cart = SessionHelper.GetCart(HttpContext);
-            ViewBag.Message = TempData["Message"]; // Message from redirection
-            HttpContext.Session.SetInt32("CartCount", cart.Items.Sum(i => i.Quantity));
-            return View(cart); // Return the actual cart page
+            _cartService = cartService;
+            _userService = userService;
         }
 
-        // Add product to the cart (POST request)
-        [HttpPost]
-        public IActionResult AddProduct(int productId, string name, decimal price, int quantity = 1)
+        private int? GetCurrentUserId() => HttpContext.Session.GetInt32(SessionUserId);
+
+        // ---------------- CART INDEX ----------------
+        public IActionResult Index()
         {
-            var cart = SessionHelper.GetCart(HttpContext);
-            cart.AddItem(new CartItem { ProductId = productId, Name = name, Price = price, Quantity = quantity });
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue) return RedirectToAction("Login", "Auth");
 
-            SessionHelper.SaveCart(HttpContext, cart);
+            var cartItems = _cartService.GetCartItems(userId.Value)
+                .Select(c => new CartItemViewModel
+                {
+                    ProductId = c.ProductId,
+                    Name = c.Product.Name,
+                    Price = c.Product.Price,
+                    Quantity = c.Quantity
+                })
+                .ToList();
 
-            // update cart count
-            HttpContext.Session.SetInt32("CartCount", cart.Items.Sum(i => i.Quantity));
+            HttpContext.Session.SetInt32("CartCount", cartItems.Sum(c => c.Quantity));
+
+            var model = new CartViewModel
+            {
+                Items = cartItems
+            };
+
+            return View(model); // artık CartViewModel gönderiyoruz
+        }
+
+
+        // ---------------- ADD PRODUCT ----------------
+        [HttpPost]
+        public IActionResult AddProduct(int productId, int quantity = 1)
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue) return RedirectToAction("Login", "Auth");
+
+            _cartService.AddToCart(userId.Value, productId, quantity);
+
+            var cartItems = _cartService.GetCartItems(userId.Value)
+                .Select(c => new CartItemViewModel
+                {
+                    ProductId = c.ProductId,
+                    Name = c.Product.Name,
+                    Price = c.Product.Price,
+                    Quantity = c.Quantity
+                })
+                .ToList();
+
+            HttpContext.Session.SetInt32("CartCount", cartItems.Sum(c => c.Quantity));
 
             TempData["Message"] = "Product added to the cart.";
             return RedirectToAction("Index");
         }
 
-        // Edit product in the cart (POST request)
+        // ---------------- EDIT CART ----------------
         [HttpPost]
         public IActionResult Edit(int productId, int quantity)
         {
-            var cart = SessionHelper.GetCart(HttpContext);
-            var item = cart.Items.FirstOrDefault(x => x.ProductId == productId);
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue) return RedirectToAction("Login", "Auth");
 
-            if (item != null)
+            // ------------------ GÜVENLİLİK KONTROLÜ ------------------
+            if (quantity < 0) quantity = 1;  // Negatif veya hatalı değerleri düzelt
+            if (quantity == 0)
             {
-                if (quantity <= 0)
-                    cart.Items.Remove(item);
-                else
-                    item.Quantity = quantity;
+                _cartService.RemoveCartItem(userId.Value, productId);
+                TempData["Message"] = "Product removed from cart.";
             }
+            else
+            {
+                _cartService.UpdateCartItem(userId.Value, productId, quantity);
+            }
+            // ---------------------------------------------------------
 
-            SessionHelper.SaveCart(HttpContext, cart);
+            var cartItems = _cartService.GetCartItems(userId.Value)
+                .Select(c => new CartItemViewModel
+                {
+                    ProductId = c.ProductId,
+                    Name = c.Product.Name,
+                    Price = c.Product.Price,
+                    Quantity = c.Quantity
+                })
+                .ToList();
 
-            // update cart 
-            HttpContext.Session.SetInt32("CartCount", cart.Items.Sum(i => i.Quantity));
+            HttpContext.Session.SetInt32("CartCount", cartItems.Sum(c => c.Quantity));
 
             return RedirectToAction("Index");
         }
 
-        // Clear the cart (POST request)
+        // ---------------- CLEAR CART ----------------
         [HttpPost]
         public IActionResult Clear()
         {
-            var cart = new Cart();
-            SessionHelper.SaveCart(HttpContext, cart);
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue) return RedirectToAction("Login", "Auth");
 
-            // update cart
+            _cartService.ClearCart(userId.Value);
             HttpContext.Session.SetInt32("CartCount", 0);
 
             TempData["Message"] = "Your cart has been cleared.";
             return RedirectToAction("Index");
-        }
-
-        //Favori listesinden cart a gitmek için
-        [HttpPost]
-        public IActionResult AddFavoritesToCart()
-        {
-            // Favorileri al
-            var favorites = SessionHelper.GetFavorites(HttpContext) ?? new List<FavoriteItem>();
-            var cart = SessionHelper.GetCart(HttpContext);
-
-            foreach (var item in favorites)
-            {
-                // Sepete ekle (adet = 1)
-                cart.AddItem(new CartItem
-                {
-                    ProductId = item.ProductId,
-                    Name = item.Name,
-                    Price = item.Price,
-                    Quantity = 1
-                });
-            }
-
-            SessionHelper.SaveCart(HttpContext, cart);
-
-            // Sepet sayısını güncelle
-            HttpContext.Session.SetInt32("CartCount", cart.Items.Sum(i => i.Quantity));
-
-            TempData["Message"] = "All favorite items have been added to the cart.";
-
-            return RedirectToAction("Index"); // Cart sayfasına yönlendir
         }
     }
 }

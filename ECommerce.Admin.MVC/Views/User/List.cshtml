@@ -1,0 +1,68 @@
+﻿@model IEnumerable<ECommerce.Data.Entities.UserEntity>
+
+@{
+    ViewData["Title"] = "User List";
+    Layout = "_SbAdminLayout";
+}
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">User List</h6>
+    </div>
+    <div class="card-body">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+        }
+
+        <div class="table-responsive">
+            <table class="table table-bordered" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Seller Approved</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>@user.Id</td>
+                            <td>@user.FirstName @user.LastName</td>
+                            <td>@user.Email</td>
+                            <td>
+                                @if (user.IsSellerApproved)
+                                {
+                                    <span class="badge badge-success">Approved</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-warning">Pending</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!user.IsSellerApproved)
+                                {
+                                    <a asp-action="Approve" asp-route-id="@user.Id" class="btn btn-success btn-sm">
+                                        <i class="fas fa-check"></i> Approve
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-secondary">No action</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
