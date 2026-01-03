@@ -1,16 +1,20 @@
-﻿using ECommerce.Application.Interfaces;
-using ECommerce.Application.ViewModels;
-using ECommerce.Data.Entities;
+﻿using ECommerce.Application.Interfaces.Services;
+using ECommerce.Domain.Entities;
+using ECommerce.Web.Mvc.Models.Cart;
+using ECommerce.Web.Mvc.Models.Order;
+using ECommerce.Web.Mvc.Models.User;
+using ECommerce.Web.MVC.Filters;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using System.Text.Json;
 
 namespace ECommerce.Web.Mvc.Controllers
 {
+    [Authorize(Roles = "Seller,Buyer")]
+    [ActiveUserAuthorize]
     public class OrderController : Controller
     {
-        private const string SessionCartKey = "Cart";
-        private const string SessionUserInfoKey = "UserInfo";
-
         private readonly IOrderService _orderService;
         private readonly IUserService _userService;
         private readonly ICartService _cartService;
@@ -22,164 +26,145 @@ namespace ECommerce.Web.Mvc.Controllers
             _cartService = cartService;
         }
 
-        private int? GetUserIdFromSession() => HttpContext.Session.GetInt32("UserId");
-
-        private CartViewModel GetCartFromSession()
+        // Cookie Authentication içindeki NameIdentifier (UserId) claim'ini okur
+        private int GetCurrentUserId()
         {
-            var json = HttpContext.Session.GetString(SessionCartKey);
-            if (string.IsNullOrEmpty(json)) return new CartViewModel();
-            return JsonSerializer.Deserialize<CartViewModel>(json) ?? new CartViewModel();
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            return int.Parse(userIdClaim!.Value);
         }
 
+              
         // ---------------- CREATE ORDER ----------------
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            var userId = GetUserIdFromSession();
-            UserInformationViewModel model;
+            var userId = GetCurrentUserId();
 
-            if (userId.HasValue)
+            // Kullanıcı bilgilerini çek
+            var user = await _userService.GetAsync(userId);
+            if (user == null) return RedirectToAction("Login", "Auth");
+
+            var model = new UserInformationViewModel
             {
-                // Kullanıcı login ise DB’den bilgileri al
-                var user = _userService.Get(userId.Value); // DB’den çekiyoruz
-                model = new UserInformationViewModel
-                {
-                    FullName = $"{user.FirstName} {user.LastName}", // Burada FullName oluşturuluyor
-                    Address = user.Address,
-                    Phone = user.Phone,
-                    Email = user.Email
-                };
-            }
-            else
-            {
-                // Misafir: session’dan al
-                var json = HttpContext.Session.GetString(SessionUserInfoKey);
-                model = string.IsNullOrEmpty(json)
-                    ? new UserInformationViewModel()
-                    : JsonSerializer.Deserialize<UserInformationViewModel>(json) ?? new UserInformationViewModel();
-            }
+                FullName = $"{user.FirstName} {user.LastName}",
+                Address = user.Address,
+                Phone = user.Phone,
+                Email = user.Email
+            };
 
             return View(model);
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Create(UserInformationViewModel model)
         {
-            if (!ModelState.IsValid) return View(model);
+            if (!ModelState.IsValid)
+                return View(model);
 
-            var userId = GetUserIdFromSession();
-            if (!userId.HasValue)
-            {
-                // Misafir: session’a kaydet
-                HttpContext.Session.SetString(SessionUserInfoKey, JsonSerializer.Serialize(model));
-            }
-            else
-            {
-                // İstersen login kullanıcı için DB’de güncelleme yapılabilir
-            }
+            // User bilgilerini sonraki adım (Payment) için session'a geçici olarak kaydediyoruz
+            HttpContext.Session.SetString("UserInfo", JsonSerializer.Serialize(model));
 
             return RedirectToAction("Payment");
         }
 
-        // ---------------- PAYMENT ----------------
+        // ---------------- PAYMENT (GET) ----------------
         [HttpGet]
-        public IActionResult Payment()
+        public async Task<IActionResult> Payment()
         {
-            var userId = HttpContext.Session.GetInt32("UserId");
-            var cartJson = HttpContext.Session.GetString("Cart");
-            var cart = string.IsNullOrEmpty(cartJson) ? null : JsonSerializer.Deserialize<CartViewModel>(cartJson);
+            var userId = GetCurrentUserId();
 
-            if (!userId.HasValue && (cart == null || !cart.Items.Any()))
-            {
-                TempData["Message"] = "You must have items in your cart to proceed to payment.";
-                return RedirectToAction("Index", "Cart");
-            }
-
-            return View(new PaymentInformationViewModel()); // default PaymentMethod = "Credit Card"
-        }
-
-        [HttpPost]
-        public IActionResult Payment(PaymentInformationViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
-            var userId = GetUserIdFromSession();
-            CartViewModel cart;
-
-            if (userId.HasValue)
-            {
-                // Login: DB’den cart al
-                var cartItems = _cartService.GetCartItems(userId.Value);
-                cart = new CartViewModel
-                {
-                    Items = cartItems.Select(c => new CartItemViewModel
-                    {
-                        ProductId = c.ProductId,
-                        Name = c.Product.Name,
-                        Price = c.Product.Price,
-                        Quantity = c.Quantity
-                    }).ToList()
-                };
-            }
-            else
-            {
-                // Misafir: session’dan cart al
-                cart = GetCartFromSession();
-            }
-
-            if (!cart.Items.Any())
+            // sepet öğelerini al
+            var cartItems = await _cartService.GetCartItemsAsync(userId);
+            if (!cartItems.Any())
             {
                 TempData["Message"] = "Your cart is empty.";
                 return RedirectToAction("Index", "Cart");
             }
 
-            // Kullanıcı bilgilerini al
-            UserInformationViewModel userInfo;
-            if (userId.HasValue)
+            var cartViewModel = new CartViewModel
             {
-                var user = _userService.Get(userId.Value); // DB’den çekiyoruz
-                userInfo = new UserInformationViewModel
+                Items = cartItems.Select(c => new CartItemViewModel
                 {
-                    FullName = $"{user.FirstName} {user.LastName}", // Burada FullName oluşturuluyor
-                    Address = user.Address,
-                    Phone = user.Phone,
-                    Email = user.Email
+                    ProductId = c.ProductId,
+                    Name = c.Name,
+                    Price = c.Price,
+                    Quantity = (byte)c.Quantity,
+                    ImageUrl = c.ImageUrl ?? "/img/product/default.jpg"
+                }).ToList()
+            };
+
+            ViewBag.Cart = cartViewModel;
+            ViewBag.Total = cartViewModel.Items.Sum(i => i.Price * i.Quantity);
+
+            return View(new PaymentInformationViewModel());
+        }
+
+        // ---------------- PAYMENT (POST - ORDER COMPLETION) ----------------
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Payment(PaymentInformationViewModel model)
+        {
+            var userId = GetCurrentUserId();
+
+            if (!ModelState.IsValid)
+            {
+                var items = await _cartService.GetCartItemsAsync(userId);
+
+                ViewBag.Cart = new CartViewModel
+                {
+                    Items = items.Select(c => new CartItemViewModel
+                    {
+                        ProductId = c.ProductId,
+                        Name = c.Name,
+                        Price = c.Price,
+                        Quantity = (byte)c.Quantity,
+                        ImageUrl = c.ImageUrl ?? "/img/product/default.jpg"
+                    }).ToList()
                 };
-            }
-            else
-            {
-                var json = HttpContext.Session.GetString(SessionUserInfoKey);
-                userInfo = string.IsNullOrEmpty(json)
-                    ? new UserInformationViewModel()
-                    : JsonSerializer.Deserialize<UserInformationViewModel>(json) ?? new UserInformationViewModel();
+
+                ViewBag.Total = items.Sum(i => i.Price * i.Quantity);
+                return View(model);
             }
 
-            // DB’ye kaydet
-            var cartItemsEntities = cart.Items.Select(i => new CartItemEntity
+            // Sepeti çek
+            var cartItems = await _cartService.GetCartItemsAsync(userId);
+            if (!cartItems.Any())
             {
-                ProductId = i.ProductId,
-                Quantity = i.Quantity,
-                CreatedAt = DateTime.Now
-            }).ToList();
+                TempData["Message"] = "Your cart is empty.";
+                return RedirectToAction("Index", "Cart");
+            }
 
-            var order = _orderService.CreateOrder(
-                userId ?? 0, // misafir için 0 veya özel guestId mantığı
-                userInfo.Address,
+            // Session'dan kullanıcı bilgilerini (adres vb.) çek
+            var userInfoJson = HttpContext.Session.GetString("UserInfo");
+            var userInfo = string.IsNullOrEmpty(userInfoJson)
+                ? null
+                : JsonSerializer.Deserialize<UserInformationViewModel>(userInfoJson);
+
+            // Session'daki user bilgisi veya profil adresi değil
+            // Payment formunda girilen DeliveryAddress alınmalı
+            // Payment formunda girilen tüm bilgileri al
+            string finalAddress = model.DeliveryAddress;
+            string deliveryFullName = model.DeliveryFullName;
+            string deliveryPhone = model.DeliveryPhone;
+
+            // Siparişi asenkron olarak oluştur
+            // ARTIK BURADA ENTITY NEWLEMIYORUZ! 
+            // Doğrudan cartItems (DTO listesi) gönderiyoruz.
+
+            var order = await _orderService.CreateOrderAsync(
+                userId,
+                model.DeliveryAddress,
                 model.PaymentMethod,
-                cartItemsEntities
+                cartItems.ToList(), // Doğrudan DTO listesini gönderiyoruz
+                model.DeliveryFullName,
+                model.DeliveryPhone
             );
 
-            // Cart temizle
-            if (userId.HasValue)
-                _cartService.ClearCart(userId.Value);
-            else
-            {
-                cart.Items.Clear();
-                HttpContext.Session.SetString(SessionCartKey, JsonSerializer.Serialize(cart));
-            }
+            // DB'den sepeti temizle ve Session sayacını sıfırla
+            await _cartService.ClearCartAsync(userId);
+            HttpContext.Session.SetInt32("CartCount", 0);
+            HttpContext.Session.Remove("UserInfo"); // Geçici bilgiyi temizle
 
             return RedirectToAction("Details", new { id = order.Id });
         }
@@ -187,31 +172,50 @@ namespace ECommerce.Web.Mvc.Controllers
         // ---------------- ORDER DETAILS ----------------
         [HttpGet]
         [Route("order-details/{id}")]
-        public IActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
-            var userId = GetUserIdFromSession();
-            if (!userId.HasValue) return RedirectToAction("Login", "Auth");
+            var userId = GetCurrentUserId();
+            var orderDto = await _orderService.GetOrderAsync(id);
 
-            var order = _orderService.GetOrder(id);
-            if (order == null || order.UserId != userId.Value)
+            // Güvenlik kontrolü: Sipariş var mı ve bu kullanıcıya mı ait?
+            if (orderDto == null || orderDto.UserId != userId)
                 return RedirectToAction("Index", "Home");
 
-            return View(order);
+            var model = new OrderDetailsViewModel
+            {
+                Id = orderDto.Id,
+                OrderCode = orderDto.OrderCode,
+                CreatedAt = orderDto.CreatedAt,
+                PaymentMethod = orderDto.PaymentMethod,
+                TotalPrice = orderDto.TotalPrice,
+                DeliveryAddress = orderDto.DeliveryAddress,
+                DeliveryFullName = orderDto.DeliveryFullName, 
+                DeliveryPhone = orderDto.DeliveryPhone,    
+                UserInformation = new UserInformationViewModel
+                {
+                    FullName = $"{orderDto.UserFullName}",
+                    Email = orderDto.UserEmail,
+                    Phone = orderDto.UserPhone,
+                    Address = orderDto.UserAddress 
+                },
+                PaymentInformation = new PaymentInformationViewModel
+                {
+                    DeliveryAddress = orderDto.DeliveryAddress,
+                    PaymentMethod = orderDto.PaymentMethod,
+                    DeliveryFullName = orderDto.DeliveryFullName,
+                    DeliveryPhone = orderDto.DeliveryPhone
+                },
+                Items = orderDto.Items.Select(i => new OrderItemViewModel
+                {
+                    ProductName = i.ProductName,
+                    UnitPrice = i.UnitPrice,
+                    Quantity = i.Quantity,
+                    ImageUrl = i.ImageUrl,
+                }).ToList()
+            };
+
+            return View(model);
         }
 
-        // ---------------- MY ORDERS ----------------
-        [HttpGet]
-        [Route("profile/my-orders")]
-        public IActionResult MyOrders()
-        {
-            var userId = GetUserIdFromSession();
-            if (!userId.HasValue) return RedirectToAction("Login", "Auth");
-
-            var orders = _orderService.GetOrdersByUser(userId.Value);
-            ViewBag.Empty = !orders.Any();
-            ViewBag.PageTitle = "My Orders";
-
-            return View(orders);
-        }
     }
 }

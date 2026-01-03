@@ -1,73 +1,89 @@
-﻿using ECommerce.Application.Interfaces;
-using ECommerce.Data;
-using ECommerce.Data.DbContexts;
-using ECommerce.Data.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using ECommerce.Application.Interfaces.Repositories;
+using ECommerce.Application.Interfaces.Services;
+using ECommerce.Domain.Entities;
+using ECommerce.Application.DTOs.Order;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ECommerce.Application.DTOs.Cart;
 
 namespace ECommerce.Application.Services
 {
     public class OrderService : IOrderService
     {
-        private readonly ECommerceDbContext _db;
+        private readonly IOrderRepository _orderRepository;
 
-        public OrderService(ECommerceDbContext db)
+        public OrderService(IOrderRepository orderRepository)
         {
-            _db = db;
+            _orderRepository = orderRepository;
         }
 
-        public OrderEntity CreateOrder(int userId, string address, string paymentMethod, List<CartItemEntity> cartItems)
+
+        public async Task<OrderDTO> CreateOrderAsync(int userId, string address, string paymentMethod, List<CartItemDTO> cartItems, string deliveryFullName, string deliveryPhone)
         {
-            // Entity: DB’ye kaydedilecek gerçek nesne
-            var order = new OrderEntity
+            var orderEntity = new OrderEntity
             {
-                UserId = userId,  // Entity: DB’de UserId kolonuna karşılık
-                Address = address,  // Entity: DB’de Address kolonuna karşılık
-                OrderCode = $"ORD-{new Random().Next(1000, 9999)}",
-                CreatedAt = DateTime.Now
+                UserId = userId,
+                DeliveryAddress = address,
+                DeliveryFullName = deliveryFullName,
+                DeliveryPhone = deliveryPhone,
+                OrderCode = $"ORD-{Guid.NewGuid().ToString().Substring(0, 8).ToUpper()}",
+                PaymentMethod = paymentMethod,
+                CreatedAt = DateTime.Now,
+                TotalPrice = 0
             };
 
-            _db.Orders.Add(order);
-            _db.SaveChanges(); // Id oluşsun
-
-            
-            foreach (var item in cartItems)
+            // Repository hala Entity beklediği için burada dönüşüm yapıyoruz
+            var orderItemsForRepo = cartItems.Select(i => new CartItemEntity
             {
-                var product = _db.Products.Find(item.ProductId); // Entity: ProductEntity DB’den çekiliyor
-                var orderItem = new OrderItemEntity
+                ProductId = i.ProductId,
+                Quantity = i.Quantity
+            }).ToList();
+
+            var order= await _orderRepository.CreateOrderAsync(orderEntity, orderItemsForRepo);
+            return MapToDto(order);
+        }
+
+        public async Task<IEnumerable<OrderDTO>> GetOrdersByUserAsync(int userId)
+        {
+            var orders = await _orderRepository.GetOrdersByUserAsync(userId);
+            return orders.Select(MapToDto).ToList();
+        }
+
+        public async Task<OrderDTO?> GetOrderAsync(int orderId)
+        {
+            var order = await _orderRepository.GetOrderWithDetailsAsync(orderId);
+            return order == null ? null : MapToDto(order);
+        }
+
+
+        // --- Mapping --- 
+        private OrderDTO MapToDto(OrderEntity order)
+        {
+            return new OrderDTO
+            {
+                Id = order.Id,
+                OrderCode = order.OrderCode,
+                TotalPrice = order.TotalPrice,
+                PaymentMethod = order.PaymentMethod,
+                CreatedAt = order.CreatedAt,
+                DeliveryAddress = order.DeliveryAddress,
+                DeliveryFullName = order.DeliveryFullName,
+                DeliveryPhone = order.DeliveryPhone,
+                UserId = order.UserId,
+                UserEmail = order.User?.Email ?? "",
+                UserPhone = order.User?.Phone ?? "",
+                UserFullName = order.User != null ? $"{order.User.FirstName} {order.User.LastName}" : "Unknown User",
+                UserAddress = order.User?.Address ?? "",
+                Items = order.OrderItems.Select(i => new OrderItemDTO
                 {
-                    OrderId = order.Id,
-                    ProductId = item.ProductId,
-                    Quantity = item.Quantity,          
-                    UnitPrice = product?.Price ?? 0,
-                    CreatedAt = DateTime.Now
-                };
-                _db.OrderItems.Add(orderItem);
-            }
-
-            _db.SaveChanges();
-            return order;
-        }
-
-        public IEnumerable<OrderEntity> GetOrdersByUser(int userId)
-        {
-            // Entity: DB’den tüm siparişleri getiriyoruz, navigation properties ile OrderItems ve Product da dahil
-            return _db.Orders
-                .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.Product)
-                .Where(o => o.UserId == userId)
-                .ToList();
-        }
-
-        public OrderEntity? GetOrder(int orderId)
-        {
-            // Entity: Tek siparişi çekiyoruz, yine navigation property dahil
-            return _db.Orders
-                .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.Product)
-                .FirstOrDefault(o => o.Id == orderId);
+                    ProductId = i.ProductId,
+                    ProductName = i.Product?.Name ?? "Product",
+                    UnitPrice = i.UnitPrice,
+                    Quantity = i.Quantity,
+                    ImageUrl = i.Product?.Images?.FirstOrDefault(img => img.IsMain)?.Url ?? "/img/product/default.jpg"
+                }).ToList()
+            };
         }
     }
 }

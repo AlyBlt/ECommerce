@@ -19,7 +19,11 @@
     <div id="wrapper">
 
         <!-- Sidebar -->
-        @await Html.PartialAsync("_Sidebar")
+       @*  @await Html.PartialAsync("_Sidebar") *@
+        @if (User.Identity != null && User.Identity.IsAuthenticated)
+        {
+            @await Html.PartialAsync("_Sidebar")
+        }
         <!-- End of Sidebar -->
         <!-- Content Wrapper -->
         <div id="content-wrapper" class="d-flex flex-column">
@@ -28,7 +32,11 @@
             <div id="content">
 
                 <!-- Topbar -->
-                @await Html.PartialAsync("_Topbar")
+               @*  @await Html.PartialAsync("_Topbar") *@
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    @await Html.PartialAsync("_Topbar")
+                }
                 <!-- End of Topbar -->
                 <!-- Begin Page Content -->
                 <div class="container-fluid">
@@ -78,6 +86,8 @@
     <script src="~/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="~/vendor/jquery-easing/jquery.easing.min.js"></script>
     <script src="~/js/sb-admin-2.min.js"></script>
+    <script src="~/vendor/jquery-validation/jquery.validate.min.js"></script>
+    <script src="~/vendor/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
 
     @RenderSection("Scripts", required: false)
 

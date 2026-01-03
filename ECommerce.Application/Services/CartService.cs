@@ -1,78 +1,110 @@
-﻿using ECommerce.Application.Interfaces;
-using ECommerce.Data.DbContexts;
-using ECommerce.Data.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using ECommerce.Application.Interfaces.Repositories;
+using ECommerce.Application.Interfaces.Services;
+using ECommerce.Domain.Entities;
 using System.Collections.Generic;
 using System.Linq;
+using ECommerce.Application.DTOs.Cart;
 
 namespace ECommerce.Application.Services
 {
     public class CartService : ICartService
     {
-        private readonly ECommerceDbContext _db;
+        private readonly ICartItemRepository _cartItemRepository;
 
-        public CartService(ECommerceDbContext db)
+
+        public CartService(ICartItemRepository cartItemRepository)
         {
-            _db = db;
+            _cartItemRepository = cartItemRepository;
         }
 
-        public IEnumerable<CartItemEntity> GetCartItems(int userId)
+
+        public async Task<IEnumerable<CartItemDTO>> GetCartItemsAsync(int userId)
         {
-            return _db.CartItems
-                      .Include(c => c.Product)
-                      .Where(c => c.UserId == userId)
-                      .ToList();
+            var entities = await _cartItemRepository.GetCartItemsWithProductAndImagesAsync(userId);
+           
+            // MANUEL MAPPING
+            return entities.Select(item => new CartItemDTO
+            {
+                ProductId = item.ProductId,
+                Name = item.Product?.Name ?? "Unknown Product",
+                Price = item.Product?.Price ?? 0,
+                Quantity = item.Quantity,
+                // Eğer CartItem'da özel bir resim yoksa ürünün ana resmini al
+                ImageUrl = item.ImageUrl ?? item.Product?.Images?.FirstOrDefault(i => i.IsMain)?.Url
+            });
         }
 
-        public void AddToCart(int userId, int productId, int quantity)
+        public async Task AddToCartAsync(int userId, CartAddDTO dto)
         {
-            var item = _db.CartItems.FirstOrDefault(c => c.UserId == userId && c.ProductId == productId);
+            // Repository Include ile ürünü de getiriyor, mapping için lazım
+            var item = await _cartItemRepository.GetCartItemAsync(userId, dto.ProductId);
+
             if (item != null)
             {
-                item.Quantity += (byte)quantity;
+                // Mevcut ürün varsa miktar artır
+                item.Quantity += dto.Quantity;
+                await _cartItemRepository.UpdateAsync(item);
             }
             else
             {
-                _db.CartItems.Add(new CartItemEntity
+                // product bilgisi repository include ile geliyor
+                var product = await _cartItemRepository.GetProductForCartAsync(dto.ProductId);
+
+                if (product == null || !product.Enabled)
+                    throw new Exception("Product not available");
+
+                await _cartItemRepository.AddAsync(new CartItemEntity
                 {
                     UserId = userId,
-                    ProductId = productId,
-                    Quantity = (byte)quantity,
-                    CreatedAt = DateTime.Now
+                    ProductId = product.Id,
+                    Quantity = dto.Quantity,
+                    CreatedAt = DateTime.Now,
+                    ImageUrl = product.Images.FirstOrDefault(i => i.IsMain)?.Url
                 });
             }
-            _db.SaveChanges();
+
+            await _cartItemRepository.SaveAsync();
         }
 
-        public void UpdateCartItem(int userId, int productId, int quantity)
+        public async Task UpdateCartItemAsync(int userId, int productId, int quantity)
         {
-            var item = _db.CartItems.FirstOrDefault(c => c.UserId == userId && c.ProductId == productId);
+            var item = await _cartItemRepository.GetCartItemAsync(userId, productId);
             if (item != null)
             {
                 if (quantity <= 0)
-                    _db.CartItems.Remove(item);
+                {
+                    await _cartItemRepository.DeleteAsync(item);  
+                }
                 else
+                {
                     item.Quantity = (byte)quantity;
+                    await _cartItemRepository.UpdateAsync(item);  
+                }
 
-                _db.SaveChanges();
+                await _cartItemRepository.SaveAsync();  
             }
         }
 
-        public void RemoveCartItem(int userId, int productId)
+        public async Task RemoveCartItemAsync(int userId, int productId)
         {
-            var item = _db.CartItems.FirstOrDefault(c => c.UserId == userId && c.ProductId == productId);
+            var item = await _cartItemRepository.GetCartItemAsync(userId, productId);
             if (item != null)
             {
-                _db.CartItems.Remove(item);
-                _db.SaveChanges();
+                await _cartItemRepository.DeleteAsync(item);
+                await _cartItemRepository.SaveAsync();
             }
         }
 
-        public void ClearCart(int userId)
+        public async Task ClearCartAsync(int userId)
         {
-            var items = _db.CartItems.Where(c => c.UserId == userId);
-            _db.CartItems.RemoveRange(items);
-            _db.SaveChanges();
+            var items = await _cartItemRepository.GetCartItemsWithProductAndImagesAsync(userId);
+            foreach (var item in items)
+            {
+               await _cartItemRepository.DeleteAsync(item);
+            }
+            await _cartItemRepository.SaveAsync();
         }
+
+
     }
 }

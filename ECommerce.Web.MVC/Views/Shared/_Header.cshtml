@@ -1,8 +1,79 @@
-﻿<!-- Header Section Begin -->     @* Controller/Actionlara göre düzenlenecek, Menu linkleri doğru actionlara bağlanacak *@
+﻿@using System.Security.Claims
+@using ECommerce.Application.Interfaces
+@using ECommerce.Application.Interfaces.Services
+@using ECommerce.Web.Mvc
+@using ECommerce.Web.Mvc.Models
+@using Microsoft.Extensions.DependencyInjection
+
 @{
-    ViewBag.CartCount = Context.Session.GetInt32("CartCount") ?? 0;
-    ViewBag.FavoritesCount = Context.Session.GetInt32("FavoritesCount") ?? 0;
+    // Kullanıcı login durumu
+    bool isLoggedIn = User.Identity?.IsAuthenticated == true;
+
+    // Kullanıcı adı
+    string displayUserName = "User";
+    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    int? userId = null;
+    if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int uid))
+    {
+        userId = uid;
+    }
+
+    if (isLoggedIn)
+    {
+        displayUserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "User";
+    }
+
+    // Cart ve Favorites sayısı
+    int cartCount = 0;
+    int favoritesCount = 0;
+    decimal cartTotal = 0;
+
+    var cartService = Context.RequestServices.GetService<ICartService>();
+    var favoriteService = Context.RequestServices.GetService<IFavoriteService>();
+
+    // Admin kontrolü eklendi
+    bool isAdmin = User.IsInRole("Admin");
+    if (userId.HasValue)
+    {
+        // Adminse sepetteki ürünleri sıfırla
+        if (isAdmin)
+        {
+            cartCount = 0;
+            cartTotal = 0;
+            favoritesCount = 0;
+        }
+        else
+        {
+            // DB'den çek
+            var favItems = await favoriteService.GetByUserAsync(userId.Value);
+            var cartItems = await cartService.GetCartItemsAsync(userId.Value);
+            if (cartItems != null)
+            {
+
+
+                cartTotal = cartItems.Sum(x => x.Quantity * x.Price);
+                cartCount = cartItems.Sum(x => x.Quantity);
+               
+            }
+            favoritesCount = favItems?.Count() ?? 0;
+        }
+
+    }
+    else
+    {
+        // Session'dan çek
+        var sessionCart = ECommerce.Web.Mvc.Helpers.SessionHelper.GetCart(Context);
+        if (sessionCart != null)
+        {
+            cartTotal = sessionCart.Items.Sum(x => x.Quantity * x.Price);
+            cartCount = sessionCart.Items.Sum(x => x.Quantity);
+        }
+
+        var sessionFavs = ECommerce.Web.Mvc.Helpers.SessionHelper.GetFavorites(Context);
+        favoritesCount = sessionFavs?.Count() ?? 0;
+    }
 }
+
 <header class="header">
     <!-- Header Top Begin -->
     <div class="header__top">
@@ -17,6 +88,7 @@
                         </ul>
                     </div>
                 </div>
+
                 <!-- Sağ Kısım: Sosyal + Dil + Login -->
                 <div class="col-lg-6 col-md-6">
                     <div class="header__top__right">
@@ -27,6 +99,7 @@
                             <a href="#"><i class="fa fa-linkedin"></i></a>
                             <a href="#"><i class="fa fa-pinterest-p"></i></a>
                         </div>
+
                         <!-- Dil seçimi -->
                         <div class="header__top__right__language">
                             <img src="~/img/language.png" alt="Language">
@@ -37,35 +110,22 @@
                                 <li><a href="#">English</a></li>
                             </ul>
                         </div>
-                        <!-- Login -->
+
+                        <!-- Login / Logout -->
                         <div class="header__top__right__auth">
-                            <!-- Login/Logout -->
-                            @* Burada durum şu ödeme için mesela userinformation girince de login gibi algılıyor
-                            header da login olmuş gibi lougout ve isim çıkıyor--veritabanında bu çözülecek! *@
-                            @{
-                                var userJson = Context.Session.GetString("UserInfo");
-                                bool isLoggedIn = !string.IsNullOrEmpty(userJson);
-                                ECommerce.Application.ViewModels.UserInformationViewModel user = null;
-
-                                if (isLoggedIn)
-                                {
-                                    user = System.Text.Json.JsonSerializer.Deserialize<ECommerce.Application.ViewModels.UserInformationViewModel>(userJson);
-                                }
-                            }
-
-                            <div class="header__top__right__auth">
-                                @if (isLoggedIn)
-                                {
-                                    <a asp-controller="Auth" asp-action="LogOut">
+                            @if (isLoggedIn)
+                            {
+                                <div style="display:flex; align-items:center; gap:15px;">
+                                    <span class="text-dark"><i class="fa fa-user"></i> @displayUserName</span>
+                                    <a asp-controller="Auth" asp-action="Logout" class="text-danger">
                                         <i class="fa fa-sign-out"></i> Logout
                                     </a>
-                                    <span class="ml-2"><i class="fa fa-user"></i> @user.FullName</span>
-                                }
-                                else
-                                {
-                                    <a asp-controller="Auth" asp-action="Login"><i class="fa fa-user"></i> Login</a>
-                                }
-                            </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <a asp-controller="Auth" asp-action="Login"><i class="fa fa-user"></i> Login</a>
+                            }
                         </div>
                     </div>
                 </div>
@@ -85,21 +145,20 @@
                 </div>
             </div>
 
-            <!-- Menü -->   @* gerçek MVC actionlarıyla eşleşmez/bizimkine göre değişecek *@
+            <!-- Menü -->
             <div class="col-lg-6 col-md-6 col-sm-6">
                 <nav class="header__menu">
                     <ul>
                         <li><a asp-controller="Home" asp-action="Index">Home</a></li>
-                        <li><a asp-controller="Home" asp-action="Listing">Shop</a></li>
-                        <li class="has-dropdown">
-                            <a href="#">Pages</a>
-                            <ul class="header__menu__dropdown">
-                                @* <li><a asp-controller="Home" asp-action="ProductDetail">Shop Details</a></li> *@
-                                <li><a asp-controller="Cart" asp-action="Index">Shopping Cart</a></li>
-                                <li><a asp-controller="Favorites" asp-action="Index">Favorites</a></li>
-                               @*  <li><a asp-controller="Blog" asp-action="Details">Blog Details</a></li> *@  @* şimdilik boş ilerde eklenir *@
-                            </ul>
-                        </li>
+                            <li><a asp-controller="Home" asp-action="Listing">Shop</a></li>
+                            <li class="has-dropdown">
+                                <a href="#">Pages</a>
+                                <ul class="header__menu__dropdown">
+                                    <li><a asp-controller="Cart" asp-action="Index">Shopping Cart</a></li>
+                                    <li><a asp-controller="Favorites" asp-action="Index">Favorites</a></li>
+                                </ul>
+                            </li>
+                        
                         <li><a asp-controller="Home" asp-action="AboutUs">About Us</a></li>
                         <li><a asp-controller="Home" asp-action="Contact">Contact</a></li>
                         @if (isLoggedIn)
@@ -113,54 +172,50 @@
             <!-- Sepet ve Favori -->
             <div class="col-lg-3 col-md-3 col-sm-6">
                 <div class="header__cart">
-                    <ul>
-                        @* <li><a href="/Wishlist"><i class="fa fa-heart"></i> <span>1</span></a></li> *@
+                     <ul>
                         <li>
                             <a asp-controller="Favorites" asp-action="Index" id="header-favorites-link">
                                 <i class="fa fa-heart"></i>
-                                <span id="header-favorites-count">@(ViewBag.FavoritesCount ?? 0)</span>
+                                <span id="header-favorites-count">@favoritesCount</span>
                             </a>
                         </li>
-                       @*  <li><a href="/Cart"><i class="fa fa-shopping-bag"></i> <span>3</span></a></li> *@
                         <li>
                             <a asp-controller="Cart" asp-action="Index">
                                 <i class="fa fa-shopping-bag"></i>
-                                <span>@(ViewBag.CartCount ?? 0)</span>
+                                <span id="cart-count">@cartCount</span>
                             </a>
                         </li>
                     </ul>
                     <div class="header__cart__price">
-                        item: <span>@ViewBag.CartTotal ₺</span>
+                        item: <span id="cart-total">$ @cartTotal.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Hamburger Menü (mobil için) //BU TAM OLARAK NERESİ EMİN OLAMADIM-KONTROL EDİLECEK!//-->
-        <div class="humberger__open">     @* Hamburger menü JS kısmı Ogani’de özel script ister *@
-            <i class="fa fa-bars"></i>     @* Kod doğru ama çalışması için Index.cshtml içine eklemek gerekir: *@
+        <!-- Hamburger Menü (mobil) -->
+        <div class="humberger__open">
+            <i class="fa fa-bars"></i>
         </div>
     </div>
     <!-- Logo + Menu + Cart End -->
 </header>
-<!-- Header Section End -->
 
-    <style>
-
+<style>
     .header__menu ul {
-        display: flex; /* Menü öğelerini yan yana hizalar */
+        display: flex;
         gap: 10px;
     }
 
-        .header__menu li a {
-    position: relative;
-    z-index: 2; /* üstte görünmesini sağlar */
-}
-/* Dropdown menü arka plan ve link renkleri */
-.header__menu .header__menu__dropdown {
-    background-color: #fff !important; /* Arka plan beyaz */
-    border: 1px solid #eee !important; /* Hafif çerçeve */
-}
+    .header__menu li a {
+        position: relative;
+        z-index: 2;
+    }
+
+    .header__menu .header__menu__dropdown {
+        background-color: #fff !important;
+        border: 1px solid #eee !important;
+    }
 
         .header__menu .header__menu__dropdown li a {
             color: #333 !important;
@@ -168,13 +223,12 @@
             display: block !important;
             transition: all 0.3s !important;
             background-color: #a4c639 !important;
-            min-width: 150px; /* tüm kutular aynı genişlikte */
+            min-width: 150px;
             box-sizing: border-box;
         }
 
-/* Hover rengi */
-.header__menu .header__menu__dropdown li a:hover {
-    background-color: #f4f4f4 !important; /* Açık gri */
-    color: #27ae60 !important; /* Tema yeşili */
-}
-    </style>
+            .header__menu .header__menu__dropdown li a:hover {
+                background-color: #f4f4f4 !important;
+                color: #27ae60 !important;
+            }
+</style>

@@ -1,117 +1,56 @@
-@model ECommerce.Application.ViewModels.ProductDetailViewModel
+ï»¿@using ECommerce.Web.Mvc
+@using ECommerce.Web.Mvc.Models
+@using ECommerce.Web.Mvc.Models.Category
+@using ECommerce.Web.Mvc.Models.Home
+@model ECommerce.Web.Mvc.Models.Product.ProductDetailViewModel
+
 @{
-    ViewData["Title"] = Model.Name;
+    ViewData["Title"] = "Product Details"; 
+    ViewData["PageTitle"] = ViewData["Title"];
+    var isAdmin = User.IsInRole("Admin");
+    var categories = ViewBag.Categories as List<CategoryViewModel> ?? new List<CategoryViewModel>();
+    var productListingViewModel = new ProductListingViewModel
+    {
+        Categories = categories
+    };
 }
 
-@* =======================================================
-   Tek ürün detay sayfasý
-   - Model üzerinden tüm bilgiler geliyor
-   - Session mantýðý ile kullanýcý bilgisi veya özel içerik gösterebiliriz
-======================================================= *@
+<form id="csrf-holder" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
 
-@* =======================================================
-   BÖLÜM 1: HERO ALANI
-   - Kategoriler ve arama çubuðu
-======================================================= *@
-<section class="hero hero-normal">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-3">
-                <div class="hero__categories">
-                    <div class="hero__categories__all">
-                        <i class="fa fa-bars"></i>
-                        <span>All departments</span>
-                    </div>
-                    <ul>
-                        <li><a href="#">Fresh Meat</a></li>
-                        <li><a href="#">Vegetables</a></li>
-                        <li><a href="#">Fruit & Nut Gifts</a></li>
-                        <li><a href="#">Fresh Berries</a></li>
-                        <li><a href="#">Ocean Foods</a></li>
-                        <li><a href="#">Butter & Eggs</a></li>
-                        <li><a href="#">Fastfood</a></li>
-                        <li><a href="#">Fresh Onion</a></li>
-                        <li><a href="#">Papayaya & Crisps</a></li>
-                        <li><a href="#">Oatmeal</a></li>
-                        <li><a href="#">Fresh Bananas</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="col-lg-9">
-                <div class="hero__search">
-                    <div class="hero__search__form">
-                        <form action="#">
-                            <div class="hero__search__categories">
-                                All Categories
-                                <span class="arrow_carrot-down"></span>
-                            </div>
-                            <input type="text" placeholder="What do you need?">
-                            <button type="submit" class="site-btn">SEARCH</button>
-                        </form>
-                    </div>
-                    <div class="hero__search__phone">
-                        <div class="hero__search__phone__icon">
-                            <i class="fa fa-phone"></i>
-                        </div>
-                        <div class="hero__search__phone__text">
-                            <h5>+65 11.188.888</h5>
-                            <span>support 24/7 time</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+    @Html.Partial("_HeroSection", productListingViewModel)
 
-@* =======================================================
-   BÖLÜM 2: BREADCRUMB
-   - Kullanýcýnýn sayfa konumu
-======================================================= *@
-<section class="breadcrumb-section set-bg" data-setbg="/images/breadcrumb.jpg">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-12 text-center">
-                <div class="breadcrumb__text">
-                    <h2>@Model.Name</h2>
-                    <div class="breadcrumb__option">
-                        <a href="/">Home</a>
-                        <a href="#">@Model.Category</a> @* Dinamik kategori *@
-                        <span>@Model.Name</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-@* =======================================================
-   BÖLÜM 3: ÜRÜN DETAY ALANI
-   - Sol: Resimler
-   - Sað: Bilgi, fiyat, rating, stok, sepete ekleme
-======================================================= *@
+<!-- Product Details -->
 <section class="product-details spad">
     <div class="container">
         <div class="row">
-
-            @* Sol kolon: resimler *@
+           
+            <!-- Left Column: Product Images -->
             <div class="col-lg-6 col-md-6">
                 <div class="product__details__pic">
                     <div class="product__details__pic__item">
-                        <img class="product__details__pic__item--large"
-                             src="@Model.ImageUrl" alt="@Model.Name">
+                        <img class="product__details__pic__item--large" src="@Url.Content(Model.ImageUrl)" alt="@Model.Name" >
                     </div>
                 </div>
             </div>
 
-            @* Sað kolon: bilgiler ve sepete ekle *@
+            <!-- Right Column: Product Info & Add to Cart -->
             <div class="col-lg-6 col-md-6">
                 <div class="product__details__text">
-                    <h3>@Model.Name</h3>
-                    <div class="product__details__rating">
+                    @if (!Model.Enabled)
+                    {
+                        <div class="alert alert-warning">
+                            This product is currently not available for sale.
+                        </div>
+                    }
+                    <h3 style="font-weight: normal;">@Model.Name</h3>
+
+                    <!-- Product Rating -->
+                    <div class="product__details__rating" style="font-size: 18px;">
                         @for (int i = 0; i < 5; i++)
                         {
-                            if (i < Math.Floor(Model.Rating))
+                            if (i < Math.Floor((double)Model.Rating))
                             {
                                 <i class="fa fa-star"></i>
                             }
@@ -127,17 +66,20 @@
                         <span>(@Model.ReviewCount reviews)</span>
                     </div>
 
+                    <!-- Product Price -->
                     <div class="product__details__price">
-                        $@Model.Price
-                        @if (Model.OldPrice.HasValue)
+                        <!-- Price Formatting with Decimal -->
+                        $@Model.Price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
+                        @if (Model.IsOnSale)
                         {
-                            <span>$@Model.OldPrice.Value</span>
+                            <!-- Old Price Formatting with Decimal -->
+                            <del>$@Model.OldPrice?.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</del>
                         }
                     </div>
 
                     <p>@Model.Description</p>
 
-                    @* Quantity ve Sepete Ekle *@
+                    <!-- Quantity and Add to Cart -->
                     <div class="product__details__quantity">
                         <div class="quantity">
                             <div class="pro-qty">
@@ -145,8 +87,46 @@
                             </div>
                         </div>
                     </div>
-                    <a href="#" class="primary-btn">ADD TO CART</a>
-                    <a href="#" class="heart-icon"><span class="icon_heart_alt"></span></a>
+
+                     @if (User.IsInRole("Admin"))
+                     {
+                        <a href="javascript:void(0);" style="cursor: not-allowed; opacity: 0.7;" title="Admins cannot add favorites" data-product-id="@Model.Id">
+                        <i class="fa fa-heart primary-btn"></i>
+                    </a>
+                     }
+                     else
+                    {
+                        <a href="#" class="favorite-btn" data-product-id="@Model.Id">
+                            <i class="fa fa-heart primary-btn"></i>
+                        </a>
+                    }
+
+                    <form id="add-to-cart-form" method="post" action="@Url.Action("AddProduct", "Cart")">
+                         <input type="hidden" name="productId" value="@Model.Id" />
+                        <input type="hidden" name="name" value="@Model.Name" />
+                        <input type="hidden" name="price" value="@Model.Price" />
+                        <input type="hidden" name="imageUrl" value="@Model.ImageUrl" />
+                         <input type="hidden" name="quantity" value="1" />
+                        @if (!Model.Enabled)
+                        {
+                          <button class="primary-btn" disabled
+                           style="opacity:0.5; cursor:not-allowed;">
+                                NOT AVAILABLE
+                          </button>
+                        }
+                        else
+                       {
+                             @if (User.IsInRole("Admin"))
+                             {
+                                <button type="submit" class="primary-btn" style="opacity:0.5; cursor:not-allowed;" title="Admins cannot shop">ADD TO CART</button>
+                             }
+                             else
+                             {
+                                <button type="submit" class="primary-btn">ADD TO CART</button>
+                             }
+                        }
+                    </form>
+                   
 
                     <ul>
                         <li><b>Availability</b> <span>@Model.Availability</span></li>
@@ -161,48 +141,129 @@
                         </li>
                     </ul>
                 </div>
-
-                @* Alt kýsým: Tablar (Description, Information, Reviews) *@
-                <div class="col-lg-12">
-                    <div class="product__details__tab">
-                        <ul class="nav nav-tabs" role="tablist">
-                            <li class="nav-item">
-                                <a class="nav-link active" data-toggle="tab" href="#tabs-1" role="tab">Description</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#tabs-2" role="tab">Information</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#tabs-3" role="tab">Reviews <span>(@Model.ReviewCount)</span></a>
-                            </li>
-                        </ul>
-                        <div class="tab-content">
-                            <div class="tab-pane active" id="tabs-1" role="tabpanel">
-                                <div class="product__details__tab__desc">
-                                    <p>@Model.Description</p>
-                                </div>
-                            </div>
-                            <div class="tab-pane" id="tabs-3" role="tabpanel">
-                                <div class="product__details__tab__desc">
-                                    <p>User reviews burada listelenecek</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
+    </div>
 </section>
 
-@* =======================================================
-   BÖLÜM 4: ÝLGÝLÝ / BENZER ÜRÜNLER
-======================================================= *@
+<!-- Product Comments -->
+<section class="product-comments spad">
+    <div class="container">
+        <h4 class="mb-4">Comments</h4>
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">@TempData["Error"]</div>
+            TempData.Clear();
+        }
+
+
+        <!-- Success Message -->
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["Success"]
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
+                </button>
+            </div>
+        }
+
+        <!-- Add Comment Form -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-body">
+                @if (User.IsInRole("Buyer") || User.IsInRole("Seller"))
+                {
+                    if (ViewBag.CanComment == true)
+                    {
+                    <form asp-action="Comment" asp-controller="Product" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="productId" value="@Model.Id" />
+                        <input type="hidden" name="UserName" value="@User.Identity.Name" />
+                        <input type="hidden" name="ProductName" value="@Model.Name" />
+
+                        <div class="form-group mb-3">
+                            <label for="text">Your Comment</label>
+                            <textarea class="form-control" name="Text" id="text" rows="3" placeholder="Write your comment..." required></textarea>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="rating">Rating</label>
+                            <select class="form-control" name="Rating" id="rating" required>
+                                <option value="1">1 Star</option>
+                                <option value="2">2 Stars</option>
+                                <option value="3">3 Stars</option>
+                                <option value="4">4 Stars</option>
+                                <option value="5">5 Stars</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Submit Comment</button>
+
+                    </form>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fa fa-lock"></i> <strong>Only verified buyers can leave a review.</strong>
+                            You must purchase this product to share your experience.
+                        </div>
+                    }
+                }
+                else if (User.IsInRole("Admin"))
+                {
+                    <p>As an admin, you are not authorized to write comment here.</p>
+                }
+                else
+                {
+                    <p>Please <a href="/account/login?returnUrl=@Url.Action("ProductDetail", "Home", new { id = Model.Id })">login</a> to comment.</p>
+                }
+            </div>
+        </div>
+        <!-- Existing Comments -->
+        <div class="comments-list">
+            @if (Model.Comments != null && Model.Comments.Any(c => c.IsApproved))
+            {
+                @foreach (var comment in Model.Comments.Where(c => c.IsApproved))
+                {
+                    <div class="card mb-3 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong>@comment.UserName</strong>
+                                <span>
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        if (i <= comment.Rating)
+                                        {
+                                            <i class="fa fa-star text-warning"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fa fa-star-o text-warning"></i>
+                                        }
+                                    }
+                                </span>
+                            </div>
+                            <p>@comment.Text</p>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <p>No comments yet. Be the first to comment!</p>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- Related Products -->
 <section class="related-product">
     <div class="container">
         <div class="row">
             <div class="col-lg-12">
                 <div class="section-title related__product__title">
-                    <h2>Related Product</h2>
+                    <h2>Related Products</h2>
                 </div>
             </div>
         </div>
@@ -211,16 +272,95 @@
             {
                 <div class="col-lg-3 col-md-4 col-sm-6">
                     <div class="product__item">
-                        <div class="product__item__pic set-bg" data-setbg="@product.ImageUrl">
+                        <div class="product__item__pic set-bg" data-setbg="@Url.Content(product.ImageUrl)">
                             <ul class="product__item__pic__hover">
-                                <li><a href="#"><i class="fa fa-heart"></i></a></li>
-                                <li><a href="#"><i class="fa fa-retweet"></i></a></li>
-                                <li><a href="#"><i class="fa fa-shopping-cart"></i></a></li>
+                                @if (User.IsInRole("Admin"))
+                                {
+                                 <li>
+                                        <a href="javascript:void(0);" style="cursor: not-allowed; opacity: 0.5;" title="Admins cannot add favorites" class="admin-disabled" data-product-id="@product.Id">
+                                        <i class="fa fa-heart"></i>
+                                    </a>
+                                </li>
+                                     <li><a href="javascript:void(0);" style="cursor: not-allowed; opacity: 0.5;" class="admin-disabled"><i class="fa fa-retweet"></i></a></li>
+                                }
+                                else
+                                {
+                                    <li>
+                                        <a href="#" class="favorite-btn" data-product-id="@product.Id">
+                                            <i class="fa fa-heart"></i>
+                                        </a>
+                                    </li>
+
+                                    <li><a href="#"><i class="fa fa-retweet"></i></a></li>
+                                }
+                                <li>
+                                    @if (!product.IsActive)
+                                    {
+                                        <button class="primary-btn" disabled style="opacity:0.5;">
+                                            NOT AVAILABLE
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        @if (User.IsInRole("Admin"))
+                                        {
+                                            <a href="javascript:void(0);" class="admin-disabled"
+                                               style="cursor: not-allowed; opacity: 0.5;"
+                                               title="Admins cannot add products to cart" data-product-id="@product.Id"
+                                           data-is-active="@product.IsActive.ToString().ToLower()"
+                                           data-name="@product.Name"
+                                           data-price="@product.Price"
+                                           data-image="@product.ImageUrl">
+                                            <i class="fa fa-shopping-cart"></i>
+                                        </a>
+                                        }
+                                        else
+                                        {
+                                            <a href="#" class="add-to-cart-btn" data-product-id="@product.Id"
+                                               data-is-active="@product.IsActive.ToString().ToLower()"
+                                               data-name="@product.Name"
+                                               data-price="@product.Price"
+                                               data-image="@product.ImageUrl">
+                                                <i class="fa fa-shopping-cart"></i>
+                                            </a>
+                                        }
+                                    }
+                                </li>
                             </ul>
                         </div>
                         <div class="product__item__text">
-                            <h6><a href="#">@product.Name</a></h6>
-                            <h5>$@product.Price</h5>
+                            <h6>
+                                <a href="@Url.Action("ProductDetail", "Home", new { id = product.Id })" style="font-size: 18px;">
+                                    @product.Name
+                                </a>
+                            </h6>
+
+                            <!-- Rating stars ve review count -->
+                            <div class="rating-area">
+                                <span class="stars">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        if ((product.Rating ?? 0) >= i)
+                                        {
+                                            <i class="fa fa-star"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fa fa-star-o"></i>
+                                        }
+                                    }
+                                </span>
+                                <span class="review-count">(@(product.ReviewCount ?? 0) reviews)</span>
+                            </div>
+                           
+                            <h5>
+                                <!-- Related Product Price Formatting -->
+                                $@product.Price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
+                                @if (product.IsOnSale)
+                                {
+                                    <del>$@product.OldPrice?.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</del>
+                                }
+                            </h5>
                         </div>
                     </div>
                 </div>
@@ -228,3 +368,190 @@
         </div>
     </div>
 </section>
+
+<style>
+    .product__details__pic__item--large {
+        width: 100%;
+        height: 400px; 
+        object-fit: cover; /* FotoÄŸrafÄ± kapsayÄ±cÄ±ya sÄ±ÄŸdÄ±rÄ±rken kesebilir */
+    }
+
+    .product__details__price {
+        color: black !important; 
+        
+    }
+    .product__details__rating span {
+        color: black !important; 
+        font-weight: normal; 
+    }
+
+  
+/* Favori ikonunun Ã¼zerine gelindiÄŸinde (hover)
+        .product__details__text .favorite-btn:hover {
+        opacity: 0.8; /* Ä°kon biraz daha ÅŸeffaf hale gelir */
+         }
+    .product__details__text .addCart:hover {
+        opacity: 0.8; /* Ä°kon biraz daha ÅŸeffaf hale gelir */
+    }
+
+    .rating-area .stars {
+        color: #FFD700;
+       
+    }
+
+    .product-comments .card {
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .product-comments .card-body {
+        padding: 1rem 1.5rem;
+    }
+
+    .product-comments .fa-star,
+    .product-comments .fa-star-o {
+        margin-right: 2px;
+    }
+
+    .product-comments h4 {
+        font-weight: 600;
+    }
+
+    .product-comments .comments-list p {
+        margin: 0;
+    }
+
+</style>
+
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var buttons = document.querySelectorAll(".favorite-btn");
+
+            buttons.forEach(function (btn) {
+                btn.addEventListener("click", function (e) {
+                    e.preventDefault();
+
+                    var productId = this.getAttribute("data-product-id");
+
+                    fetch("/Favorites/Add", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
+                        },
+                        body: "productId=" + productId
+                    })
+                        .then(response => {
+                            if (response.ok) {
+                                var countSpan = document.getElementById("header-favorites-count");
+                                if (countSpan) {
+                                    countSpan.textContent = parseInt(countSpan.textContent || "0") + 1;
+                                }
+                                alert("Product added to favorites!");
+                            } else {
+                                alert("Failed to add favorite");
+                            }
+                        })
+                        .catch(err => console.error(err));
+                });
+            });
+        });
+       
+
+        
+
+            document.addEventListener("DOMContentLoaded", function () {
+            var addToCartForm = document.getElementById("add-to-cart-form");
+
+            if (addToCartForm) {
+                addToCartForm.addEventListener("submit", function (e) {
+                    e.preventDefault();
+
+                  
+                    var productId = this.querySelector("input[name='productId']").value;
+                    var name = this.querySelector("input[name='name']").value;
+                    var price = this.querySelector("input[name='price']").value;
+                    var imageUrl = this.querySelector("input[name='imageUrl']").value;
+                    var quantity = this.querySelector("input[name='quantity']").value;
+
+                    fetch("@Url.Action("AddProduct", "Cart")", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "RequestVerificationToken": document.querySelector("#csrf-holder input").value
+                        },
+                        body: `productId=${productId}&name=${encodeURIComponent(name)}&price=${price}&imageUrl=${encodeURIComponent(imageUrl)}&quantity=${quantity}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert("Product added to cart!");
+                            var cartCountSpan = document.getElementById("cart-count");
+                            if (cartCountSpan) {
+                                cartCountSpan.textContent = data.cartCount;
+                            }
+                            // Header cart total gÃ¼ncelle
+                           const cartTotalSpan = document.getElementById("cart-total");
+                           if(cartTotalSpan){
+                           cartTotalSpan.textContent = "$ " + data.cartTotal.toFixed(2);
+                           }
+                           
+                        } else {
+                            alert("Failed to add product to cart.");
+                        }
+                    })
+                    .catch(error => console.error("Error adding product to cart:", error));
+                });
+            }
+        });
+
+
+        //Related Product add
+
+                document.addEventListener("DOMContentLoaded", function () {
+            var addToCartButtons = document.querySelectorAll(".add-to-cart-btn");
+
+            addToCartButtons.forEach(function (btn) {
+                btn.addEventListener("click", function (e) {
+                    e.preventDefault();
+
+                     
+                      var productId = this.dataset.productId;
+                      var name = this.dataset.name;
+                      var price = this.dataset.price;
+                      var imageUrl = this.dataset.image;
+                      var quantity = this.dataset.quantity || 1;
+
+                    fetch("@Url.Action("AddProduct", "Cart")", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "RequestVerificationToken": document.querySelector("#csrf-holder input").value
+                        },
+                         body: `productId=${productId}&name=${encodeURIComponent(name)}&price=${price}&imageUrl=${encodeURIComponent(imageUrl)}&quantity=${quantity}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert("Product added to cart!");
+                            var cartCountSpan = document.getElementById("cart-count");
+                            if (cartCountSpan) {
+                                cartCountSpan.textContent = data.cartCount;
+                            }
+                                    // Header cart total gÃ¼ncelle
+                         const cartTotalSpan = document.getElementById("cart-total");
+                        if(cartTotalSpan){
+                        cartTotalSpan.textContent = "$ " + data.cartTotal.toFixed(2);
+                        }
+                        } else {
+                            alert("Failed to add product to cart.");
+                        }
+                    })
+                    .catch(error => console.error("Error adding product to cart:", error));
+                });
+            });
+        });
+    </script>
+        }

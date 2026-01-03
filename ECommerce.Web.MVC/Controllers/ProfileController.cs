@@ -1,139 +1,129 @@
-﻿using ECommerce.Application.Interfaces;
-using ECommerce.Application.ViewModels;
-using ECommerce.Data.Entities;
+﻿using ECommerce.Application.DTOs.User;
+using ECommerce.Application.Interfaces.Services;
+using ECommerce.Web.Mvc.Models.Comment;
+using ECommerce.Web.Mvc.Models.Home;
+using ECommerce.Web.Mvc.Models.Order;
+using ECommerce.Web.Mvc.Models.User;
+using ECommerce.Web.MVC.Filters;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 
 namespace ECommerce.Web.Mvc.Controllers
 {
+    [Authorize]
+    [ActiveUserAuthorize]
     public class ProfileController : Controller
     {
-        private const string SessionUserIdKey = "UserId";
-        private readonly IUserService _userService;
+       private readonly IUserService _userService;
 
         public ProfileController(IUserService userService)
         {
             _userService = userService;
         }
 
-        // ---------------- SESSION & LOGIN ----------------
-        private bool IsLoggedIn() => HttpContext.Session.GetInt32(SessionUserIdKey) != null;
+        // Cookie Authentication içindeki NameIdentifier (UserId) claim'ini okur
+        private int GetCurrentUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        private UserEntity? GetUserFromDb()
-        {
-            var userId = HttpContext.Session.GetInt32(SessionUserIdKey);
-            if (!userId.HasValue) return null;
-
-            return _userService.Get(userId.Value, includeOrders: true, includeProducts: true);
-        }
-
-        // ---------------- DETAILS ----------------
+        // ---------------- DETAILS (GET) ----------------
         [Route("profile")]
         [Route("profile/details")]
-        public IActionResult Details()
+        public async Task<IActionResult> Details()
         {
-            if (!IsLoggedIn()) return RedirectToAction("Login", "Auth");
-
-            var user = GetUserFromDb();
-            if (user == null) return RedirectToAction("Login", "Auth");
+            var userDto = await _userService.GetAsync(GetCurrentUserId());
+            if (userDto == null) return RedirectToAction("Login", "Auth");
 
             var model = new UserDetailsViewModel
             {
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Email = user.Email,
-                Phone = user.Phone,
-                Address = user.Address,
-                IsSellerApproved = user.IsSellerApproved
+                FirstName = userDto.FirstName,
+                LastName = userDto.LastName,
+                Email = userDto.Email,
+                Phone = userDto.Phone,
+                Address = userDto.Address,
+                IsSellerApproved = userDto.IsSellerApproved
             };
 
             ViewBag.PageTitle = "My Profile";
             return View(model);
         }
 
-        // ---------------- EDIT ----------------
-        [Route("profile/edit")]
+        // ---------------- EDIT (GET) ----------------
         [HttpGet]
-        public IActionResult Edit()
+        [Route("profile/edit")]
+        public async Task<IActionResult> Edit()
         {
-            if (!IsLoggedIn()) return RedirectToAction("Login", "Auth");
-
-            var user = GetUserFromDb();
-            if (user == null) return RedirectToAction("Login", "Auth");
+            var userDto = await _userService.GetAsync(GetCurrentUserId());
+            if (userDto == null) return RedirectToAction("Login", "Auth");
 
             var model = new UserEditViewModel
             {
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Email = user.Email,
-                Phone = user.Phone,
-                Address = user.Address
+                FirstName = userDto.FirstName,
+                LastName = userDto.LastName,
+                Email = userDto.Email,
+                Phone = userDto.Phone,
+                Address = userDto.Address
             };
 
             ViewBag.PageTitle = "Edit Profile";
             return View(model);
         }
 
+        // ---------------- EDIT (POST) ----------------
         [HttpPost]
         [Route("profile/edit")]
-        public IActionResult Edit(UserEditViewModel model)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(UserEditViewModel model)
         {
-            var user = GetUserFromDb();
-            if (user == null) return RedirectToAction("Login", "Auth");
+            if (!ModelState.IsValid) return View(model);
 
-            user.FirstName = model.FirstName;
-            user.LastName = model.LastName;
+            var userDto = await _userService.GetAsync(GetCurrentUserId());
+            if (userDto == null) return NotFound();
 
-            // Email değişmiyor ama modelden geldiği için güncelliyoruz
-            user.Email = model.Email;
+            userDto.FirstName = model.FirstName;
+            userDto.LastName = model.LastName;
+            userDto.Email = model.Email;
+            userDto.Phone = model.Phone;
+            userDto.Address = model.Address;
 
-            // EKLENMESİ GEREKENLER
-            user.Phone = model.Phone;
-            user.Address = model.Address;
-
-            _userService.Update(user);
+            await _userService.UpdateAsync(userDto);
 
             TempData["Success"] = "Profile updated successfully.";
-            return RedirectToAction("Details");
+            return RedirectToAction(nameof(Details));
         }
 
-        // ---------------- MY ORDERS ----------------
+        // ---------------- MY ORDERS (GET) ----------------
+        [Authorize(Roles = "Seller,Buyer")]
         [Route("profile/my-orders")]
-        public IActionResult MyOrders()
+        public async Task<IActionResult> MyOrders()
         {
-            if (!IsLoggedIn()) return RedirectToAction("Login", "Auth");
+            // Kullanıcıyı siparişleriyle birlikte getir (Service tarafında Include edilmeli)
+            var userDto = await _userService.GetAsync(GetCurrentUserId(), includeOrders: true);
+            if (userDto == null) return NotFound();
 
-            var user = GetUserFromDb();
-            if (user == null) return RedirectToAction("Login", "Auth");
-
-            // -------------------- USER INFO → ViewBag.User --------------------
-            var userVm = new UserInformationViewModel
+            ViewBag.User = new UserInformationViewModel
             {
-                FullName = $"{user.FirstName} {user.LastName}",
-                Email = user.Email,
-                Phone = user.Phone,
-                Address = user.Address,
-               
+                FullName = $"{userDto.FirstName} {userDto.LastName}",
+                Email = userDto.Email,
+                Phone = userDto.Phone,
+                Address = userDto.Address
             };
-            ViewBag.User = userVm;
-            // -----------------------------------------------------------------
 
-            // ---------------- ORDER LIST ----------------
-            var orders = user.Orders?.Select(o => new OrderSummaryViewModel
+            var orders = userDto.Orders?.Select(o => new OrderSummaryViewModel
             {
                 Id = o.Id,
                 OrderCode = o.OrderCode,
                 CreatedAt = o.CreatedAt,
                 PaymentMethod = o.PaymentMethod ?? "Credit Card",
-                Items = o.OrderItems?.Select(oi => new OrderItemViewModel
+                TotalAmount = o.TotalPrice,
+                Items = o.Items?.Select(oi => new OrderItemViewModel
                 {
-                    ProductName = oi.Product?.Name ?? "",
+                    ProductName = oi.ProductName ?? "Product",
                     UnitPrice = oi.UnitPrice,
                     Quantity = (byte)oi.Quantity
-                }).ToList() ?? new List<OrderItemViewModel>(),
-                TotalAmount = o.OrderItems?.Sum(oi => oi.UnitPrice * oi.Quantity) ?? 0
-            }).ToList() ?? new List<OrderSummaryViewModel>();
+                }).ToList() ?? new List<OrderItemViewModel>()
+            }).OrderByDescending(x => x.CreatedAt).ToList() ?? new List<OrderSummaryViewModel>();
 
             ViewBag.Empty = !orders.Any();
             ViewBag.PageTitle = "My Orders";
@@ -141,69 +131,82 @@ namespace ECommerce.Web.Mvc.Controllers
             return View(orders);
         }
 
-        // ---------------- MY PRODUCTS ----------------
+        // ---------------- MY PRODUCTS (GET) ----------------
+        [Authorize(Roles = "Seller")]
         [Route("profile/my-products")]
-        public IActionResult MyProducts()
+        public async Task<IActionResult> MyProducts()
         {
-            if (!IsLoggedIn()) return RedirectToAction("Login", "Auth");
+            // TempData'daki veriyi temizle
+            TempData.Clear();
+            var userDto = await _userService.GetAsync(GetCurrentUserId(), includeProducts: true);
+            if (userDto == null || !userDto.IsSellerApproved) return Forbid();
+                       
 
-            var user = GetUserFromDb();
-            if (user == null) return RedirectToAction("Login", "Auth");
-
-            // ViewBag.User
             ViewBag.User = new UserInformationViewModel
             {
-                FullName = $"{user.FirstName} {user.LastName}",
-                Email = user.Email,
-                Phone = user.Phone,
-                Address = user.Address,
+                FullName = $"{userDto.FirstName} {userDto.LastName}",
+                Email = userDto.Email,
+                Address = userDto.Address
             };
 
-            // ViewModel’e dönüştürme
-            var products = user.Products?.Select(p => new ProductListingViewModel
+            var products = userDto.Products?.Select(p => new ProductListingViewModel
             {
                 Id = p.Id,
                 Name = p.Name,
-                Category = p.Category?.Name ?? "",
-                ImageUrl = "/img/no-image.png", // çünkü entity'de resim yok
+                Category = p.CategoryName ?? "General",
+                ImageUrl = p.MainImageUrl ?? "/img/product/default.jpg",
                 Price = p.Price,
-                InCart = false,
+                OldPrice = p.OldPrice,
+                Enabled = p.Enabled,
                 Comments = p.Comments?.Select(c => new CommentViewModel
                 {
                     Id = c.Id,
-                    UserName = c.User?.FirstName ?? "User",
-                    ProductName = p.Name,
+                    UserName = c.UserName ?? "Anonymous",
                     Text = c.Text,
                     Rating = c.StarCount,
                     IsApproved = c.IsConfirmed
                 }).ToList() ?? new List<CommentViewModel>()
             }).ToList() ?? new List<ProductListingViewModel>();
 
+            
             ViewBag.PageTitle = "My Products";
             return View(products);
         }
 
-        // ---------------- REQUEST SELLER ROLE ----------------
+        // ---------------- REQUEST SELLER ROLE (POST) ----------------
+        [HttpGet]
+        [Authorize(Roles = "Buyer")]
         [Route("profile/request-seller")]
-        public IActionResult RequestSellerRole()
+        public async Task <IActionResult> RequestSellerRole()
         {
-            if (!IsLoggedIn()) return RedirectToAction("Login", "Auth");
+            var userDto = await _userService.GetAsync(GetCurrentUserId());
+            if (userDto == null) return NotFound();
+            ViewBag.IsSellerApproved = userDto.IsSellerApproved;
+            ViewBag.HasPendingRequest = userDto.HasPendingSellerRequest;
+            return View(); // View döndürülecek
+        }
 
-            var user = GetUserFromDb();
-            if (user == null) return RedirectToAction("Login", "Auth");
+        [HttpPost]
+        [Authorize(Roles = "Buyer")]
+        [Route("profile/request-seller")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RequestSellerRole(RequestSellerViewModel model)
+        {
+            var userDto = await _userService.GetAsync(GetCurrentUserId());
+            if (userDto == null) return NotFound();
 
-            if (!user.IsSellerApproved)
+            if (!userDto.IsSellerApproved && !userDto.HasPendingSellerRequest)
             {
-                user.IsSellerApproved = false; // Talep kaydı için flag
-                _userService.Update(user);
+                await _userService.RequestSellerStatusAsync(userDto.Id);
                 TempData["Success"] = "Seller request submitted. Admin approval pending.";
+                return RedirectToAction(nameof(Details));
             }
             else
             {
-                TempData["Info"] = "You are already a seller.";
+                TempData["Info"] = "You already have a pending request.";
+                return RedirectToAction(nameof(RequestSellerRole));
             }
 
-            return RedirectToAction("Details");
         }
     }
 }

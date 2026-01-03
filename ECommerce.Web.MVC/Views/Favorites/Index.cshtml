@@ -1,9 +1,41 @@
-﻿@model List<ECommerce.Application.ViewModels.FavoriteItemViewModel>
-
+﻿@model List<ECommerce.Web.Mvc.Models.Favorite.FavoriteItemViewModel>
+@{
+    ViewData["Title"] = "My Favorites";
+    var isAdmin = User.IsInRole("Admin");
+    var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
+    var isBuyerOrSeller = User.IsInRole("Buyer") || User.IsInRole("Seller");
+}
+@if (isAdmin)
+{
+    <div class="alert alert-danger">
+        You are not authorized to view or modify the favorites. Please proceed to the admin dashboard.
+    </div>
+}
+else
+{
 <section class="shoping-cart spad">
     <div class="container">
 
-        <h2 class="mb-4">My Favorites</h2>
+    @if (TempData["Error"] != null)
+    {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="close" data-dismiss="alert">
+                        <span>&times;</span>
+                    </button>
+                </div>
+    }
+    @if (TempData["Success"] != null || TempData["Message"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @(TempData["Success"] ?? TempData["Message"])
+            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+    }
+
+
+   
+     <h2 class="mb-4">My Favorites</h2>
 
         @if (Model.Any())
         {
@@ -22,7 +54,7 @@
                         {
                             <tr>
                                 <td class="shoping__cart__item d-flex align-items-center">
-                                    <img src="@(!string.IsNullOrEmpty(item.ImageUrl) ? item.ImageUrl : "/img/product/default.jpg")"
+                                    <img src="@(!string.IsNullOrEmpty(item.ImageUrl) ? Url.Content(item.ImageUrl) : Url.Content("~/img/product/default.jpg"))"
                                          alt="@item.Name"
                                          class="me-3"
                                          style="width:70px; height:70px; object-fit:cover;" />
@@ -30,16 +62,25 @@
                                 </td>
 
                                 <td class="shoping__cart__price">
-                                    @item.Price ₺
+                                    $ @item.Price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
                                 </td>
 
-                                <td class="shoping__cart__item__close">
+                                <td class="shoping__cart__item__close d-flex flex-column">
+                                    <!-- Remove -->
                                     <form asp-controller="Favorites"
                                           asp-action="Remove"
-                                          method="post">
+                                          method="post" class="mb-1">
                                         <input type="hidden" name="productId" value="@item.ProductId" />
                                         <button type="submit" class="primary-btn btn-sm">
                                             Remove
+                                        </button>
+                                    </form>
+
+                                    <!-- Add to Cart -->
+                                    <form class="add-to-cart-form" data-productid="@item.ProductId" data-name="@item.Name" data-price="@item.Price" data-imageurl="@item.ImageUrl" data-quantity="1">
+                                        @Html.AntiForgeryToken()
+                                        <button type="button" class="primary-btn btn-sm add-to-cart-btn">
+                                            Add to Cart
                                         </button>
                                     </form>
                                 </td>
@@ -56,10 +97,15 @@
                     ← Back to Shop
                 </a>
 
-                <!-- GO TO CART -->
-                <form asp-controller="Cart" asp-action="AddFavoritesToCart" method="post" class="go-to-cart-form">
-                    <button type="submit" class="primary-btn cart-btn">Go to Cart →</button>
+                <!-- CLEAR FAVORITES -->
+                <form asp-controller="Favorites" asp-action="ClearFavorites" method="post" class="go-to-cart-form">
+                    <button type="submit" class="primary-btn cart-btn">Clear Favorites</button>
                 </form>
+
+                <!-- GO TO CART -->
+                <a asp-controller="Cart" asp-action="Index" class="primary-btn cart-btn">
+                    Go to Cart →
+                </a>
 
             </div>
         }
@@ -74,23 +120,73 @@
 
     </div>
 </section>
+}
 
 @section Styles {
     <style>
-        /* "Go to Cart" button’un border’ını kaldır */
         .go-to-cart-form button {
             border: none;
         }
 
-        /* Tablo yazı boyutunu biraz küçült */
         .shoping__cart__table table {
             font-size: 0.9rem;
         }
 
-        /* Remove butonun renk ve stilini Ogani template ile uyumlu yap */
         .shoping__cart__item__close .primary-btn {
             padding: 4px 10px;
             font-size: 0.85rem;
         }
     </style>
+}
+
+
+
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            $('.add-to-cart-btn').click(function (e) {
+                e.preventDefault();
+
+                var form = $(this).closest('form');
+
+                var productId = form.data('productid');
+                var name = form.data('name');
+                var price = form.data('price');
+                var imageUrl = form.data('imageurl');
+                var quantity = form.data('quantity');
+                var token = form.find('input[name="__RequestVerificationToken"]').val();
+
+                $.ajax({
+                    url: '/Cart/AddProduct',
+                    type: 'POST',
+                    data: {
+                        productId: productId,
+                        name: name,
+                        price: price,
+                        imageUrl: imageUrl,
+                        quantity: quantity,
+                        __RequestVerificationToken: token
+                    },
+                    success: function (res) {
+
+                        if (res.success) {
+                            // HEADER UPDATE
+                            $('#cart-count').text(res.cartCount);
+                            $('#cart-total').text(res.cartTotal.toFixed(2) + ' $');
+
+                            alert(res.message);
+                        }
+                    },
+                    error: function () {
+                        alert('Something went wrong!');
+                    }
+                });
+            });
+
+        });
+    </script>
 }

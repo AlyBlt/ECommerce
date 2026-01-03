@@ -1,8 +1,8 @@
-﻿@model List< ECommerce.Application.ViewModels.OrderSummaryViewModel>
+﻿@model List<ECommerce.Web.Mvc.Models.Order.OrderSummaryViewModel>
 
 @{
     ViewData["Title"] = "My Orders";
-    var user = ViewBag.User as ECommerce.Application.ViewModels.UserInformationViewModel;
+    var user = ViewBag.User as ECommerce.Web.Mvc.Models.User.UserInformationViewModel;
 }
 <section class="checkout profile-section">
     <div class="container">
@@ -15,8 +15,21 @@
                     <ul class="list-group list-group-flush profile-menu">
                         <li class="list-group-item"><a href="/profile/details">My Profile</a></li>
                         <li class="list-group-item"><a href="/profile/edit">Edit Profile</a></li>
-                        <li class="list-group-item"><a href="/profile/my-orders" class="active">My Orders</a></li>
-                        <li class="list-group-item"><a href="/profile/my-products">My Products</a></li>
+                        @* Buyer veya Seller için My Orders *@
+                        @if (User.IsInRole("Buyer") || User.IsInRole("Seller"))
+                        {
+                            <li class="list-group-item"><a href="/profile/my-orders">My Orders</a></li>
+                        }
+                        @* Sadece Seller için My Products *@
+                        @if (User.IsInRole("Seller"))
+                        {
+                            <li class="list-group-item"><a href="/profile/my-products">My Products</a></li>
+                        }
+                        @* Sadece Buyer için Request Seller Role *@
+                        @if (User.IsInRole("Buyer"))
+                        {
+                            <li class="list-group-item"><a href="/profile/request-seller">Request Seller Role</a></li>
+                        }
                     </ul>
                 </div>
             </div>
@@ -29,11 +42,8 @@
 
                     @if (ViewBag.Empty == true)
                     {
-                        <div class="alert alert-info alert-dismissible" role="alert">
+                        <div class="alert alert-info" role="alert">
                             No orders found.
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
                         </div>
                     }
                     else
@@ -59,14 +69,14 @@
                                             {
                                                 <tr>
                                                     <td>@item.ProductName</td>
-                                                    <td>$@item.UnitPrice</td>
+                                                    <td>@item.UnitPrice.ToString("C2", new System.Globalization.CultureInfo("en-US"))</td>
                                                     <td>@item.Quantity</td>
-                                                    <td>$@item.TotalPrice</td>
+                                                    <td>@item.TotalPrice.ToString("C2", new System.Globalization.CultureInfo("en-US"))</td>
                                                 </tr>
                                             }
                                         </tbody>
                                     </table>
-                                    <p class="text-right"><strong>Total:</strong> $@order.TotalAmount</p>
+                                    <p class="text-right"><strong>Total:</strong> @order.TotalAmount.ToString("C2", new System.Globalization.CultureInfo("en-US"))</p>
                                 </div>
                             </div>
                         }

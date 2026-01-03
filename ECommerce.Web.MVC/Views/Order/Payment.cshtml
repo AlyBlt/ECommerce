@@ -1,10 +1,11 @@
-﻿@model ECommerce.Application.ViewModels.PaymentInformationViewModel
+﻿@model ECommerce.Web.Mvc.Models.Order.PaymentInformationViewModel
 @{
     ViewData["Title"] = "Complete Order";
-    Layout = "~/Views/Shared/_OganiLayout.cshtml";
+   
 }
 
-
+@if (User.IsInRole("Buyer") || User.IsInRole("Seller"))
+{
 <section class="checkout spad">
     <div class="container">
         <div class="row justify-content-center">
@@ -41,6 +42,28 @@
                                 <span class="checkmark"></span>
                             </label>
                         </div>
+                            <!-- New Delivery Name Input -->
+                            <div class="checkout__input__box mb-4">
+                                <label for="DeliveryFullName" class="form-label">Delivery Full Name<span class="text-danger">*</span></label>
+                                <input type="text" id="DeliveryFullName" asp-for="DeliveryFullName" class="checkout__input" placeholder="Enter delivery full name" value="@Model.DeliveryFullName" />
+                               
+                            </div>
+
+                            <!-- New Delivery Phone Input -->
+                            <div class="checkout__input__box mb-4">
+                                <label for="DeliveryPhone" class="form-label">Delivery Phone <span class="text-danger">*</span></label>
+                                <input type="text" id="DeliveryPhone" asp-for="DeliveryPhone" class="checkout__input" placeholder="Enter delivery phone" value="@Model.DeliveryPhone" />
+                               
+                            </div>
+
+                            <!-- New Delivery Address Input -->
+                            <div class="checkout__input__box mb-4">
+                                <label for="DeliveryAddress" class="form-label">
+                                    Delivery Address <span class="text-danger">*</span>
+                                </label>
+                                <textarea id="DeliveryAddress" asp-for="DeliveryAddress" class="checkout__input" placeholder="Enter your delivery address"></textarea>
+                               
+                            </div>
 
                         <div class="mt-4 text-end">
                             <button type="submit" class="site-btn">Complete Order</button>
@@ -53,6 +76,13 @@
         </div>
     </div>
 </section>
+}
+else
+{
+<div class="alert alert-warning text-center mt-4">
+    You are not authorized to access this page.
+</div>
+}
 
 <style>
     .checkout__input__checkbox label {
@@ -69,5 +99,27 @@
 
     .checkout__form h4 {
         font-weight: 600;
+    }
+
+    /* CSS Adjustments for Delivery Address */
+    .checkout__input__box textarea {
+        width: 100%; /* Ensures it fills the available space */
+        height: 150px; /* Adjust height for better visibility */
+        padding: 12px; /* Adds some padding inside the textarea */
+        border-radius: 5px; /* Rounded corners */
+        border: 1px solid #ccc; /* Light border color */
+        font-size: 16px; /* Matches font size with the rest */
+    }
+
+    .checkout__input__box label {
+        font-size: 18px; /* Larger text for the label */
+        font-weight: 600; /* Slightly bolder for better visibility */
+        margin-bottom: 8px; /* Adds some space between label and textarea */
+        display: block; /* Ensures label and textarea are stacked vertically */
+    }
+
+    .checkout__form h4 {
+        font-weight: 600;
+        font-size: 22px; /* Larger heading for better emphasis */
     }
 </style>

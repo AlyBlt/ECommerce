@@ -1,8 +1,8 @@
-﻿@model ECommerce.Data.Entities.ProductEntity
+﻿@model ECommerce.Admin.Mvc.Models.Product.ProductDeleteViewModel
 
 @{
     ViewData["Title"] = "Delete Product";
-    Layout = "_SbAdminLayout";
+    
 }
 
 <div class="card shadow mb-4">
@@ -10,9 +10,16 @@
         <h6 class="m-0 font-weight-bold text-danger">Delete Product</h6>
     </div>
     <div class="card-body">
-        <p>Are you sure you want to delete the product <strong>@Model.Name</strong>?</p>
+        <p>Are you sure you want to delete the following product?</p>
 
+        <ul class="list-group mb-3">
+            <li class="list-group-item"><strong>Name:</strong> @Model.Name</li>
+            <li class="list-group-item"><strong>Category:</strong> @Model.CategoryName</li>
+            <li class="list-group-item"><strong>Price:</strong> @Model.Price.ToString("C2", new System.Globalization.CultureInfo("en-US"))</li>
+        </ul>
         <form asp-action="DeleteConfirmed" asp-route-id="@Model.Id" method="post">
+            <input type="hidden" asp-for="Id" />
+            @Html.AntiForgeryToken()
             <button type="submit" class="btn btn-danger">
                 <i class="fas fa-trash-alt"></i> Yes, Delete
             </button>

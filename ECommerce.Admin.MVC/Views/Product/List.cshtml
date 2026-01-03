@@ -1,21 +1,35 @@
-﻿@model IEnumerable<ECommerce.Data.Entities.ProductEntity>
+﻿@model IEnumerable<ECommerce.Admin.Mvc.Models.Product.ProductListViewModel>
 
 @{
     ViewData["Title"] = "Product List";
-    Layout = "_SbAdminLayout";
+   
 }
 
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex justify-content-between align-items-center">
         <h6 class="m-0 font-weight-bold text-info">Product List</h6>
-        <a asp-action="Create" class="btn btn-primary btn-sm">
-            <i class="fas fa-plus"></i> Create New
-        </a>
     </div>
+
     <div class="card-body">
+
         @if (TempData["Success"] != null)
         {
-            <div class="alert alert-success">@TempData["Success"]</div>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["Success"]
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        }
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @TempData["Error"]
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
         }
 
         <div class="table-responsive">
@@ -27,38 +41,50 @@
                         <th>Category</th>
                         <th>Seller</th>
                         <th>Price</th>
-                        <th>Stock</th>
                         <th>Enabled</th>
-                        <th>Actions</th>
+                        <th style="width: 200px;">Actions</th>
                     </tr>
                 </thead>
+
                 <tbody>
                     @foreach (var product in Model)
                     {
                         <tr>
                             <td>@product.Id</td>
                             <td>@product.Name</td>
-                            <td>@product.Category?.Name</td>
-                            <td>@product.Seller?.FirstName @product.Seller?.LastName</td>
-                            <td>@product.Price.ToString("C")</td>
-                            <td>@product.StockAmount</td>
-                            <td>@(product.Enabled ? "Yes" : "No")</td>
+                            <td>@product.CategoryName</td>
                             <td>
-                                <a asp-action="Edit" asp-route-id="@product.Id" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
-                                <a asp-action="Delete" asp-route-id="@product.Id" class="btn btn-danger btn-sm ms-1">
-                                    <i class="fas fa-trash"></i> Delete
-                                </a>
-                                <form asp-action="ToggleStatus" asp-route-id="@product.Id" method="post" style="display:inline;">
-                                    <button type="submit" class="btn btn-warning btn-sm ms-1">
-                                        <i class="fas fa-toggle-on"></i> @(product.Enabled ? "Disable" : "Enable")
+                                <span class="text-primary"><i class="fas fa-store mr-1"></i> @product.SellerName</span> 
+                            </td>
+                            <td>@product.Price.ToString("C2", new System.Globalization.CultureInfo("en-US"))</td>
+
+                            <td>
+                                @if (product.Enabled)
+                                {
+                                    <span class="badge badge-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary">Disabled</span>
+                                }
+                            </td>
+
+                            <td>
+                                <form asp-action="ToggleStatus" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@product.Id" />
+                                    <button type="submit" class="btn btn-warning btn-sm">
+                                        @(product.Enabled ? "Disable" : "Enable")
                                     </button>
                                 </form>
+
+                                <a asp-action="Delete" asp-route-id="@product.Id" class="btn btn-danger btn-sm ms-1">
+                                    Delete
+                                </a>
                             </td>
                         </tr>
                     }
                 </tbody>
+
             </table>
         </div>
     </div>

@@ -1,7 +1,7 @@
-﻿using ECommerce.Application.Interfaces;
-using ECommerce.Data.DbContexts;
-using ECommerce.Data.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using ECommerce.Application.DTOs.Favorite;
+using ECommerce.Application.Interfaces.Repositories;
+using ECommerce.Application.Interfaces.Services;
+using ECommerce.Domain.Entities;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,48 +9,71 @@ namespace ECommerce.Application.Services
 {
     public class FavoriteService : IFavoriteService
     {
-        private readonly ECommerceDbContext _db;
+        private readonly IFavoriteRepository _favoriteRepository;
 
-        public FavoriteService(ECommerceDbContext db)
+        public FavoriteService(IFavoriteRepository favoriteRepository)
         {
-            _db = db;
+            _favoriteRepository = favoriteRepository;
         }
 
-        public IEnumerable<FavoriteEntity> GetByUser(int userId)
+        public async Task<IEnumerable<FavoriteDTO>> GetByUserAsync(int userId)
         {
-            return _db.Favorites
-                .Include(f => f.Product)
-                .Where(f => f.UserId == userId)
-                .ToList();
-        }
-
-        public void Add(int userId, int productId)
-        {
-            if (!Exists(userId, productId))
+            var favorites = await _favoriteRepository.GetByUserWithProductAsync(userId);
+            return favorites.Select(f => new FavoriteDTO
             {
-                var favorite = new FavoriteEntity
-                {
-                    UserId = userId,
-                    ProductId = productId
-                };
-                _db.Favorites.Add(favorite);
-                _db.SaveChanges();
+                Id = f.Id,
+                UserId = f.UserId,
+                ProductId = f.ProductId,
+                ProductName = f.Product?.Name ?? "Unknown Product",
+                ProductPrice = f.Product?.Price ?? 0,
+                ProductImageUrl = f.Product?.Images.FirstOrDefault(i => i.IsMain)?.Url ?? "/img/product/default.jpg",
+                CreatedAt = f.CreatedAt
+            }).ToList();
+
+        }
+
+        public async Task AddAsync(int userId, int productId)
+        {
+            if (!await ExistsAsync(userId, productId))
+            {
+              await _favoriteRepository.AddAsync(
+                    new FavoriteEntity 
+                    { 
+                        UserId = userId, 
+                        ProductId = productId 
+                    });
+                await _favoriteRepository.SaveAsync();
             }
         }
 
-        public void Remove(int userId, int productId)
+        public async Task RemoveAsync(int userId, int productId)
         {
-            var favorite = _db.Favorites.FirstOrDefault(f => f.UserId == userId && f.ProductId == productId);
+            var favorite = await _favoriteRepository.GetAsync(userId, productId);
             if (favorite != null)
             {
-                _db.Favorites.Remove(favorite);
-                _db.SaveChanges();
+                await _favoriteRepository.DeleteAsync(favorite);
+                await _favoriteRepository.SaveAsync();
             }
         }
 
-        public bool Exists(int userId, int productId)
+        public async Task<bool> ExistsAsync(int userId, int productId)
         {
-            return _db.Favorites.Any(f => f.UserId == userId && f.ProductId == productId);
+            return await _favoriteRepository.ExistsAsync(userId, productId);
+        }
+
+        public async Task ClearAsync(int userId)
+        {
+            var favorites = await _favoriteRepository.GetByUserAsync(userId);
+
+            if (favorites.Any())
+            {
+                foreach (var favorite in favorites)
+                {
+                    await _favoriteRepository.DeleteAsync(favorite);
+                }
+
+                await _favoriteRepository.SaveAsync();
+            }
         }
     }
 }

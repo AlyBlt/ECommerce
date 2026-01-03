@@ -1,0 +1,49 @@
+﻿@model ECommerce.Admin.Mvc.Models.Auth.LoginViewModel
+@{
+    ViewData["Title"] = "Admin Login";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Admin</title>
+
+    <!-- Custom fonts -->
+    <link href="~/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+
+    <!-- Custom styles -->
+    <link href="~/css/sb-admin-2.min.css" rel="stylesheet" />
+</head>
+<body class="bg-gradient-primary">
+    <!-- Start of the Login Section -->
+    <div class="container">
+        <div class="row justify-content-center align-items-center min-vh-100">
+            <!-- Genişlik arttırıldı: col-md-8 yerine col-lg-6 -->
+            <div class="col-12 col-sm-10 col-md-8 col-lg-6">
+                <div class="card shadow-lg mt-5">
+                    <div class="card-header bg-primary text-white text-center py-3">
+                        <h4>Admin Panel Login</h4>
+                    </div>
+                    <div class="card-body-lg">
+                        @RenderBody()  <!-- Login formu -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End of the Login Section -->
+    <!-- Scripts -->
+    <script src="~/vendor/jquery/jquery.min.js"></script>
+    <script src="~/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="~/js/sb-admin-2.min.js"></script>
+    <script src="~/vendor/jquery-validation/jquery.validate.min.js"></script>
+    <script src="~/vendor/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

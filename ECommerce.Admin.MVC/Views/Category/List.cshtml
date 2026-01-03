@@ -1,11 +1,32 @@
-﻿@model IEnumerable<ECommerce.Data.Entities.CategoryEntity>
+﻿@model IEnumerable<ECommerce.Admin.Mvc.Models.Category.CategoryListViewModel>
 
 @{
     ViewData["Title"] = "Category List";
-    Layout = "_SbAdminLayout";
+  
 }
 
 <h1 class="h3 mb-4 text-gray-800">Category List</h1>
+
+<!-- Success / Error mesajları -->
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
 
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex justify-content-between align-items-center">
@@ -40,12 +61,10 @@
                             </td>
                             <td><i class="@item.IconCssClass"></i> @item.IconCssClass</td>
                             <td>
-                                <!-- Edit -->
                                 <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm">
                                     <i class="fas fa-edit"></i> Edit
                                 </a>
 
-                                <!-- Delete -->
                                 <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">
                                     <i class="fas fa-trash"></i> Delete
                                 </a>

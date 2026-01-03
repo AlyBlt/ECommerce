@@ -1,8 +1,7 @@
-﻿using ECommerce.Application.Interfaces;
-using ECommerce.Data;
-using ECommerce.Data.DbContexts;
-using ECommerce.Data.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using ECommerce.Application.Interfaces.Repositories;
+using ECommerce.Application.Interfaces.Services;
+using ECommerce.Domain.Entities;
+using ECommerce.Application.DTOs.ProductComment;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,50 +9,100 @@ namespace ECommerce.Application.Services
 {
     public class ProductCommentService : IProductCommentService
     {
-        private readonly ECommerceDbContext _db;
+        private readonly IProductCommentRepository _productCommentRepository;
 
-        public ProductCommentService(ECommerceDbContext db)
+        public ProductCommentService(IProductCommentRepository productCommentRepository)
         {
-            _db = db;
+            _productCommentRepository = productCommentRepository;
         }
 
-        public IEnumerable<ProductCommentEntity> GetAll() =>
-            _db.ProductComments.Include(pc => pc.Product).Include(pc => pc.User).ToList();
-
-        public ProductCommentEntity? Get(int id) =>
-            _db.ProductComments.Include(pc => pc.Product).Include(pc => pc.User).FirstOrDefault(pc => pc.Id == id);
-
-        public void Add(ProductCommentEntity productComment)
+        // Tüm yorumları getir
+        public async Task<IEnumerable<ProductCommentDTO>> GetAllAsync()
         {
-            _db.ProductComments.Add(productComment);
-            _db.SaveChanges();
+            var comments = await _productCommentRepository.GetCommentsWithDetailsAsync();
+            return comments.Select(MapToDto).ToList();
         }
 
-        public void Update(ProductCommentEntity productComment)
+        // Belirli bir yorumu getir
+        public async Task<ProductCommentDTO?> GetAsync(int id)
         {
-            _db.ProductComments.Update(productComment);
-            _db.SaveChanges();
+            var comment = (await _productCommentRepository.GetCommentsWithDetailsAsync())
+                  .FirstOrDefault(c => c.Id == id);
+
+            return comment == null ? null : MapToDto(comment);
         }
 
-        public void Delete(int id)
+        // Yorum ekleme işlemi
+        public async Task AddAsync(ProductCommentDTO dto)
         {
-            var productComment = _db.ProductComments.Find(id);
+            var entity = new ProductCommentEntity
+            {
+                ProductId = dto.ProductId,
+                UserId = dto.UserId,
+                Text = dto.Text,
+                StarCount = dto.StarCount,
+                CreatedAt = DateTime.Now,
+                IsConfirmed = false // Yeni yorum onay bekler
+            };
+            await _productCommentRepository.AddAsync(entity);
+            await _productCommentRepository.SaveAsync();
+        }
+
+        // Yorum güncelleme işlemi
+        public async Task UpdateAsync(ProductCommentDTO dto)
+        {
+            var entity = await _productCommentRepository.GetByIdAsync(dto.Id);
+            if (entity != null)
+            {
+                entity.Text = dto.Text;
+                entity.StarCount = dto.StarCount;
+                // Diğer güncellenebilir alanlar...
+
+                await _productCommentRepository.UpdateAsync(entity);
+                await _productCommentRepository.SaveAsync(); 
+            }
+        }
+
+        // Yorum silme işlemi
+        public async Task DeleteAsync(int id)
+        {
+            var productComment = await _productCommentRepository.GetByIdAsync(id);
             if (productComment != null)
             {
-                _db.ProductComments.Remove(productComment);
-                _db.SaveChanges();
+                await _productCommentRepository.DeleteAsync(productComment);    // BaseRepository'den gelen metot
             }
         }
 
-        // Approve metodunu ApproveComment olarak değiştirdik
-        public void ApproveComment(int id)
+
+        // Yorum onaylama işlemi
+        public async Task ApproveCommentAsync(int id)
         {
-            var comment = _db.ProductComments.Find(id);
-            if (comment != null)
+            await _productCommentRepository.ApproveCommentAsync(id);  // Repository'den gelen metot
+        }
+
+
+        // Yorum reddetme işlemi
+        public async Task RejectCommentAsync(int id)
+        {
+            await _productCommentRepository.RejectCommentAsync(id);  // Repository'den gelen metot
+        }
+
+        // --- MAPPING ---
+        private ProductCommentDTO MapToDto(ProductCommentEntity entity)
+        {
+            return new ProductCommentDTO
             {
-                comment.IsConfirmed = true;
-                _db.SaveChanges();
-            }
+                Id = entity.Id,
+                ProductId = entity.ProductId,
+                ProductName = entity.Product?.Name ?? "Bilinmeyen Ürün",
+                UserId = entity.UserId,
+                UserName = entity.User != null ? $"{entity.User.FirstName} {entity.User.LastName}" : "Anonim",
+                Text = entity.Text,
+                StarCount = entity.StarCount,
+                IsConfirmed = entity.IsConfirmed,
+                IsRejected = entity.IsRejected,
+                CreatedAt = entity.CreatedAt
+            };
         }
     }
 }

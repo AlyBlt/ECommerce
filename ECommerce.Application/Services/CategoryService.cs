@@ -1,8 +1,7 @@
-﻿using ECommerce.Application.Interfaces;
-using ECommerce.Data;
-using ECommerce.Data.DbContexts;
-using ECommerce.Data.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using ECommerce.Application.DTOs.Category;
+using ECommerce.Application.Interfaces.Repositories;
+using ECommerce.Application.Interfaces.Services;
+using ECommerce.Domain.Entities;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,43 +9,98 @@ namespace ECommerce.Application.Services
 {
     public class CategoryService : ICategoryService
     {
-        private readonly ECommerceDbContext _db;
+        private readonly ICategoryRepository _categoryRepository;
+        private readonly IBaseRepository<ProductEntity> _productRepository;
 
-        public CategoryService(ECommerceDbContext db)
+        public CategoryService(ICategoryRepository categoryRepository, IBaseRepository<ProductEntity> productRepository)
         {
-            _db = db;
+            _categoryRepository = categoryRepository;
+            _productRepository = productRepository;
         }
 
-        public IEnumerable<CategoryEntity> GetAll()
+        // Get all categories 
+        public async Task<IEnumerable<CategoryDTO>> GetAllAsync()
         {
-            return _db.Categories.ToList();
-        }
-
-        public CategoryEntity? Get(int id)
-        {
-            return _db.Categories.FirstOrDefault(c => c.Id == id);
-        }
-
-        public void Add(CategoryEntity category)
-        {
-            _db.Categories.Add(category);
-            _db.SaveChanges();
-        }
-
-        public void Update(CategoryEntity category)
-        {
-            _db.Categories.Update(category);
-            _db.SaveChanges();
-        }
-
-        public void Delete(int id)
-        {
-            var category = _db.Categories.Find(id);
-            if (category != null)
+            var entities = await _categoryRepository.GetAllAsync();
+            return entities.Select(e => new CategoryDTO
             {
-                _db.Categories.Remove(category);
-                _db.SaveChanges();
+                Id = e.Id,
+                Name = e.Name,
+                Color = e.Color,
+                IconCssClass = e.IconCssClass
+            });
+        }
+
+        // Get a single category by ID 
+        public async Task<CategoryDTO?> GetAsync(int id)
+        {
+            var entity = await _categoryRepository.GetByIdAsync(id);
+            if (entity == null) return null;
+            return new CategoryDTO
+            {
+                Id = entity.Id,
+                Name = entity.Name,
+                Color = entity.Color,
+                IconCssClass = entity.IconCssClass
+            };
+        }
+
+        // Add a new category 
+        //DTO -> Entity Manuel Mapping
+        public async Task AddAsync(CategoryDTO catDto)
+        {
+            var entity = new CategoryEntity
+            {
+                Name = catDto.Name,
+                Color = catDto.Color,
+                IconCssClass = catDto.IconCssClass,
+                CreatedAt = DateTime.Now
+            };
+            await _categoryRepository.AddAsync(entity);
+            await _categoryRepository.SaveAsync();
+        }
+
+        // Update an existing category
+        public async Task UpdateAsync(CategoryDTO catDto)
+        {
+            var existingEntity = await _categoryRepository.GetByIdAsync(catDto.Id);
+            if (existingEntity == null) throw new KeyNotFoundException("Category not found!");
+
+            // Mevcut entity üzerindeki alanları DTO'dan gelenlerle güncelle
+            existingEntity.Name = catDto.Name;
+            existingEntity.Color = catDto.Color;
+            existingEntity.IconCssClass = catDto.IconCssClass;
+
+            await _categoryRepository.UpdateAsync(existingEntity);  
+            await _categoryRepository.SaveAsync();
+        }
+
+        // Delete a category 
+        public async Task DeleteAsync(int id)
+        {
+            var category = await _categoryRepository.GetByIdAsync(id);
+            if (category == null) throw new KeyNotFoundException("Category not found!");
+
+            if (category == null)
+            {
+                throw new KeyNotFoundException("Category not found!");
             }
+
+            bool hasProducts = await _categoryRepository.HasProductsAsync(id);
+            if (hasProducts)
+            {
+                throw new InvalidOperationException("Cannot delete category with products. Remove or reassign products first.");
+            }
+
+            await _categoryRepository.DeleteAsync(category); 
+            await _categoryRepository.SaveAsync();
+        }
+
+        // Check if a category has associated products asynchronously
+        public async Task<bool> HasProductsAsync(int categoryId)
+        {
+            return await _categoryRepository.HasProductsAsync(categoryId);
         }
     }
+    
 }

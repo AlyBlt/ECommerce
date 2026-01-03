@@ -1,11 +1,20 @@
-﻿@model ECommerce.Data.Entities.CategoryEntity
+﻿@model ECommerce.Admin.Mvc.Models.Category.CategoryCreateEditViewModel
 
 @{
     ViewData["Title"] = "Delete Category";
-    Layout = "_SbAdminLayout";
+   
 }
 
 <h1 class="h3 mb-4 text-gray-800">Delete Category</h1>
+
+<!-- ModelState hataları -->
+@if (!ViewData.ModelState.IsValid)
+{
+    foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+    {
+        <div class="alert alert-danger">@error.ErrorMessage</div>
+    }
+}
 
 <div class="card shadow mb-4">
     <div class="card-body">

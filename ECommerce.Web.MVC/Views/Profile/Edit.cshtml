@@ -1,4 +1,4 @@
-﻿@model ECommerce.Application.ViewModels.UserEditViewModel
+﻿@model ECommerce.Web.Mvc.Models.User.UserEditViewModel
 @{
     ViewData["Title"] = "Edit Profile";
 }
@@ -14,8 +14,21 @@
                     <ul class="list-group list-group-flush profile-menu">
                         <li class="list-group-item"><a href="/profile/details">My Profile</a></li>
                         <li class="list-group-item"><a href="/profile/edit">Edit Profile</a></li>
-                        <li class="list-group-item"><a href="/profile/my-orders">My Orders</a></li>
-                        <li class="list-group-item"><a href="/profile/my-products">My Products</a></li>
+                        @* Buyer veya Seller için My Orders *@
+                        @if (User.IsInRole("Buyer") || User.IsInRole("Seller"))
+                        {
+                            <li class="list-group-item"><a href="/profile/my-orders">My Orders</a></li>
+                        }
+                        @* Sadece Seller için My Products *@
+                        @if (User.IsInRole("Seller"))
+                        {
+                            <li class="list-group-item"><a href="/profile/my-products">My Products</a></li>
+                        }
+                        @* Sadece Buyer için Request Seller Role *@
+                        @if (User.IsInRole("Buyer"))
+                        {
+                            <li class="list-group-item"><a href="/profile/request-seller">Request Seller Role</a></li>
+                        }
                     </ul>
                 </div>
             </div>

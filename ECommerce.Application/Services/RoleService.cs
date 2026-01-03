@@ -1,45 +1,76 @@
-﻿using ECommerce.Application.Interfaces;
-using ECommerce.Data;
-using ECommerce.Data.DbContexts;
-using ECommerce.Data.Entities;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
+﻿using ECommerce.Application.DTOs.Role;
+using ECommerce.Application.Interfaces.Repositories;
+using ECommerce.Application.Interfaces.Services;
+using ECommerce.Domain.Entities;
+
 
 namespace ECommerce.Application.Services
 {
     public class RoleService : IRoleService
     {
-        private readonly ECommerceDbContext _db;
+        private readonly IRoleRepository _roleRepository;
 
-        public RoleService(ECommerceDbContext db)
+        public RoleService(IRoleRepository roleRepository)
         {
-            _db = db;
+            _roleRepository = roleRepository;
         }
 
-        public IEnumerable<RoleEntity> GetAll() => _db.Roles.ToList();
 
-        public RoleEntity? Get(int id) => _db.Roles.FirstOrDefault(r => r.Id == id);
-
-        public void Add(RoleEntity role)
+        public async Task<IEnumerable<RoleDTO>> GetAllAsync()
         {
-            _db.Roles.Add(role);
-            _db.SaveChanges();
+            var roles = await _roleRepository.GetAllAsync();
+            return roles.Select(r => new RoleDTO
+            {
+                Id = r.Id,
+                Name = r.Name,
+                CreatedAt = r.CreatedAt,
+                // Eğer Repository Include(Users) yapıyorsa sayısı da gelir
+                UserCount = r.Users?.Count ?? 0
+            });
         }
 
-        public void Update(RoleEntity role)
+        public async Task<RoleDTO?> GetAsync(int id)
         {
-            _db.Roles.Update(role);
-            _db.SaveChanges();
+            var role = await _roleRepository.GetByIdAsync(id);
+            if (role == null) return null;
+
+            return new RoleDTO
+            {
+                Id = role.Id,
+                Name = role.Name,
+                CreatedAt = role.CreatedAt
+            };
         }
 
-        public void Delete(int id)
+        public async Task AddAsync(RoleDTO roleDto)
         {
-            var role = _db.Roles.Find(id);
+            var role = new RoleEntity
+            {
+                Name = roleDto.Name,
+                CreatedAt = DateTime.Now
+            };
+            await _roleRepository.AddAsync(role);
+            await _roleRepository.SaveAsync();
+        }
+
+        public async Task UpdateAsync(RoleDTO roleDto)
+        {
+            var role = await _roleRepository.GetByIdAsync(roleDto.Id);
             if (role != null)
             {
-                _db.Roles.Remove(role);
-                _db.SaveChanges();
+                role.Name = roleDto.Name;
+                await _roleRepository.UpdateAsync(role);
+                await _roleRepository.SaveAsync();
+            }
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            var role = await _roleRepository.GetByIdAsync(id);
+            if (role != null)
+            {
+                await _roleRepository.DeleteAsync(role);
+                await _roleRepository.SaveAsync();
             }
         }
     }

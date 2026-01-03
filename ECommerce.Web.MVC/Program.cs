@@ -1,19 +1,31 @@
-using ECommerce.Application.Interfaces;
+using ECommerce.Application.Interfaces.Services;
 using ECommerce.Application.Services;
-using ECommerce.Data;
 using ECommerce.Data.DbContexts;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// DbContext ekle
-builder.Services.AddDbContext<ECommerceDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// 1. Cookie Authentication
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/account/login";
+        options.AccessDeniedPath = "/account/login";
+        options.Cookie.Name = "WebAuthCookie";
+        options.ExpireTimeSpan = TimeSpan.FromHours(2);
+        options.SlidingExpiration = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    });
 
-// Application services
+// 2. DbContext
+builder.Services.AddDataLayer(connectionString);
+
+// 3. Servis Kayýtlarý
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductCommentService, ProductCommentService>();
@@ -23,8 +35,15 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<JWTService>(); // JWTService'i buraya da ekledik
+builder.Services.AddScoped<IEmailService, EmailService>(); //EmailService
 
-// Session setup
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddControllersWithViews();
+
+
+//4.Session Ayarlarý
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
@@ -35,19 +54,10 @@ builder.Services.AddSession(options =>
 
 var app = builder.Build();
 
-// WEB tarafýnda veritabaný oluþturma + seed iþlemi
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ECommerceDbContext>();
+// 5. Veritabaný Seed Ýþlemi
+app.Services.ApplySeedData();
 
-    // 1) Ödev gereði veritabanýný oluþtur
-    db.Database.EnsureCreated();
-
-    // 2) Seed iþlemi
-    SeedData.Initialize(db);
-}
-
-// Pipeline
+// 6. Pipeline Sýralamasý
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -56,14 +66,12 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
 
-app.UseSession();
-
+app.UseSession(); // Authentication'dan önce gelmeli
+app.UseAuthentication();
 app.UseAuthorization();
 
-// Default route
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

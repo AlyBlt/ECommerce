@@ -1,61 +1,72 @@
-﻿<ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+﻿@if (User.Identity != null && User.Identity.IsAuthenticated)
+{
+    <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
-    <!-- Sidebar - Brand -->
-    <a class="sidebar-brand d-flex align-items-center justify-content-center" href="@Url.Action("Index", "Dashboard")">
-        <div class="sidebar-brand-icon rotate-n-15">
-            <i class="fas fa-laugh-wink"></i>
+        <!-- Sidebar - Brand -->
+        <a class="sidebar-brand d-flex align-items-center justify-content-center" href="@Url.Action("Index", "Home")">
+            <div class="sidebar-brand-icon">
+                <span class="crown-only">👑</span>
+            </div>
+            <div class="sidebar-brand-text mx-3">Admin</div>
+        </a>
+
+        <hr class="sidebar-divider my-0">
+
+        <!-- Dashboard -->
+        <li class="nav-item active">
+            <a class="nav-link" href="@Url.Action("Index", "Home")">
+                <i class="fas fa-fw fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+        </li>
+
+        <hr class="sidebar-divider">
+
+        <!-- Categories -->
+        <li class="nav-item">
+            <a class="nav-link" href="@Url.Action("List", "Category")">
+                <i class="fas fa-fw fa-list"></i>
+                <span>Categories</span>
+            </a>
+        </li>
+
+        <!-- Users -->
+        <li class="nav-item">
+            <a class="nav-link" href="@Url.Action("List", "User")">
+                <i class="fas fa-fw fa-users"></i>
+                <span>Users</span>
+            </a>
+        </li>
+
+        <!-- Products -->
+        <li class="nav-item">
+            <a class="nav-link" href="@Url.Action("List", "Product")">
+                <i class="fas fa-fw fa-box"></i>
+                <span>Products</span>
+            </a>
+        </li>
+
+        <!-- Comments -->
+        <li class="nav-item">
+            <a class="nav-link" href="@Url.Action("List", "ProductComment")">
+                <i class="fas fa-fw fa-comments"></i>
+                <span>Comments</span>
+            </a>
+        </li>
+
+        <hr class="sidebar-divider d-none d-md-block">
+
+        <div class="text-center d-none d-md-inline">
+            <button class="rounded-circle border-0" id="sidebarToggle"></button>
         </div>
-        <div class="sidebar-brand-text mx-3"> Admin <sup>👑</sup></div>
-    </a>
 
-    <hr class="sidebar-divider my-0">
-
-    <!-- Dashboard -->
-    <li class="nav-item active">
-        <a class="nav-link" href="@Url.Action("Index", "Dashboard")">
-            <i class="fas fa-fw fa-tachometer-alt"></i>
-            <span>Dashboard</span>
-        </a>
-    </li>
-
-    <hr class="sidebar-divider">
-
-    <!-- Categories -->
-    <li class="nav-item">
-        <a class="nav-link" href="@Url.Action("Create", "Category")">
-            <i class="fas fa-fw fa-list"></i>
-            <span>Categories</span>
-        </a>
-    </li>
-
-    <!-- Users -->
-    <li class="nav-item">
-        <a class="nav-link" href="@Url.Action("List", "User")">
-            <i class="fas fa-fw fa-users"></i>
-            <span>Users</span>
-        </a>
-    </li>
-
-    <!-- Products -->
-    <li class="nav-item">
-        <a class="nav-link" href="@Url.Action("List", "Product")">
-            <i class="fas fa-fw fa-box"></i>
-            <span>Products</span>
-        </a>
-    </li>
-
-    <!-- Comments -->
-    <li class="nav-item">
-        <a class="nav-link" href="@Url.Action("List", "ProductComment")">
-            <i class="fas fa-fw fa-comments"></i>
-            <span>Comments</span>
-        </a>
-    </li>
-
-    <hr class="sidebar-divider d-none d-md-block">
-
-    <div class="text-center d-none d-md-inline">
-        <button class="rounded-circle border-0" id="sidebarToggle"></button>
-    </div>
-
-</ul>
+    </ul>
+}
+<style>
+    .crown-only {
+        font-size: 1.5rem; 
+        line-height: 1;
+        display: inline-block;
+        font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    }
+</style>

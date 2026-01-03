@@ -1,4 +1,4 @@
-﻿using ECommerce.Data.Entities;
+﻿using ECommerce.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
@@ -6,7 +6,7 @@ using System;
 namespace ECommerce.Data.DbContexts
 
 {
-    public class ECommerceDbContext : DbContext
+    internal class ECommerceDbContext : DbContext
     {
         public ECommerceDbContext(DbContextOptions<ECommerceDbContext> options) : base(options) { }
 
@@ -79,6 +79,10 @@ namespace ECommerce.Data.DbContexts
 
                 entity.Property(pi => pi.CreatedAt)
                       .IsRequired();
+
+                entity.Property(pi => pi.IsMain)
+                      .IsRequired()
+                      .HasDefaultValue(false);
 
                 // FK relation
                 entity.HasOne(pi => pi.Product)
@@ -164,7 +168,7 @@ namespace ECommerce.Data.DbContexts
                 entity.HasOne(pc => pc.Product)
                     .WithMany(p => p.Comments)
                     .HasForeignKey(pc => pc.ProductId)
-                    .OnDelete(DeleteBehavior.Restrict); // Multiple cascade paths önlemek için
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(pc => pc.User)
                     .WithMany(u => u.Comments)
@@ -202,34 +206,44 @@ namespace ECommerce.Data.DbContexts
                     .OnDelete(DeleteBehavior.Restrict); // Multiple cascade paths önlemek için
             });
 
-            modelBuilder.Entity<ProductCommentEntity>(entity =>
+
+            modelBuilder.Entity<OrderEntity>(entity =>
             {
-                entity.HasKey(c => c.Id);
+                entity.HasKey(o => o.Id);
 
-                entity.Property(c => c.Text)
-                      .IsRequired()
-                      .HasMaxLength(500);
+                entity.Property(o => o.DeliveryAddress).IsRequired();
+                entity.Property(o => o.PaymentMethod).IsRequired();
+                entity.Property(o => o.CreatedAt).IsRequired();
 
-                entity.Property(c => c.StarCount)
-                      .IsRequired();
+                // Yeni eklenen alanlar
+                entity.Property(o => o.DeliveryFullName).IsRequired(); // Teslim alacak kişinin adı
+                entity.Property(o => o.DeliveryPhone).IsRequired();    // Teslim edilecek kişinin telefonu
 
-                entity.Property(c => c.IsConfirmed)
-                      .IsRequired()
-                      .HasDefaultValue(false);
+                entity.HasOne(o => o.User)
+                    .WithMany(u => u.Orders)
+                    .HasForeignKey(o => o.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
-                entity.Property(c => c.CreatedAt)
-                      .IsRequired();
+                entity.HasMany(o => o.OrderItems)
+                    .WithOne(oi => oi.Order)
+                    .HasForeignKey(oi => oi.OrderId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-                // FK relation
-                entity.HasOne(c => c.Product)
-                      .WithMany(p => p.Comments)
-                      .HasForeignKey(c => c.ProductId)
-                      .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<OrderItemEntity>(entity =>
+            {
+                entity.HasKey(oi => oi.Id);
 
-                entity.HasOne(c => c.User)
-                      .WithMany(u => u.Comments)
-                      .HasForeignKey(c => c.UserId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                entity.Property(oi => oi.UnitPrice)
+                    .HasColumnType("decimal(18,2)")
+                    .IsRequired();
+
+                entity.Property(oi => oi.Quantity).IsRequired();
+
+                entity.HasOne(oi => oi.Product)
+                    .WithMany()
+                    .HasForeignKey(oi => oi.ProductId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
 

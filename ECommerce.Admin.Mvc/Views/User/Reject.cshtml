@@ -1,0 +1,20 @@
+﻿@model ECommerce.Admin.Mvc.Models.User.UserViewModel
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-danger">Reject Seller Request</h6>
+    </div>
+    <div class="card-body">
+        <p>
+            Are you sure you want to <strong>reject</strong> <strong>@Model.FirstName @Model.LastName</strong> as a seller?
+        </p>
+        <div class="d-flex">
+        <form asp-action="RejectConfirmed" asp-route-id="@Model.Id" method="post">
+            <button type="submit" class="btn btn-danger">
+                <i class="fas fa-check"></i> Reject
+            </button>
+        </form>
+        <a asp-action="List" class="btn btn-secondary ml-2">Cancel</a>
+        </div>
+    </div>
+</div>

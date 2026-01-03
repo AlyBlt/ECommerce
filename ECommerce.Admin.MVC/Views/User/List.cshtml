@@ -1,8 +1,8 @@
-﻿@model IEnumerable<ECommerce.Data.Entities.UserEntity>
+﻿@model IEnumerable<ECommerce.Admin.Mvc.Models.User.UserViewModel>
 
 @{
     ViewData["Title"] = "User List";
-    Layout = "_SbAdminLayout";
+   
 }
 
 <div class="card shadow mb-4">
@@ -12,11 +12,22 @@
     <div class="card-body">
         @if (TempData["SuccessMessage"] != null)
         {
-            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["SuccessMessage"]
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
         }
+
         @if (TempData["ErrorMessage"] != null)
         {
-            <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @TempData["ErrorMessage"]
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
         }
 
         <div class="table-responsive">
@@ -27,7 +38,8 @@
                         <th>Name</th>
                         <th>Email</th>
                         <th>Seller Approved</th>
-                        <th>Actions</th>
+                        <th>Seller Approvement Actions</th>
+                        <th>Status Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -42,21 +54,53 @@
                                 {
                                     <span class="badge badge-success">Approved</span>
                                 }
-                                else
+                                else if (user.HasPendingSellerRequest)
                                 {
                                     <span class="badge badge-warning">Pending</span>
                                 }
+                                else if (user.IsRejected)
+                                {
+                                    <span class="badge badge-danger">Rejected</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary">No Request</span>
+                                }
                             </td>
                             <td>
-                                @if (!user.IsSellerApproved)
+                                @* Seller actions *@
+                                @if (!user.IsSellerApproved && user.HasPendingSellerRequest)
                                 {
-                                    <a asp-action="Approve" asp-route-id="@user.Id" class="btn btn-success btn-sm">
-                                        <i class="fas fa-check"></i> Approve
-                                    </a>
+                                    <div class="d-flex">
+                                        <!-- Approve butonu -->
+                                        <a asp-action="ApproveForm" asp-route-id="@user.Id" class="btn btn-success btn-sm mr-2">
+                                            <i class="fas fa-check"></i> Approve
+                                        </a>
+
+                                        <!-- Reject butonu -->
+                                        <a asp-action="RejectForm" asp-route-id="@user.Id" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-check"></i> Reject
+                                        </a>
+                                    </div>
                                 }
                                 else
                                 {
                                     <span class="text-secondary">No action</span>
+                                }
+                            </td>
+                            @* Toggle Enabled *@
+                            <td class="d-flex">
+                                @if (user.Enabled)
+                                {
+                                    <a asp-action="ToggleEnabled" asp-route-id="@user.Id" class="btn btn-warning btn-sm">
+                                        <i class="fas fa-user-slash"></i> Deactivate
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a asp-action="ToggleEnabled" asp-route-id="@user.Id" class="btn btn-success btn-sm">
+                                        <i class="fas fa-user-check"></i> Activate
+                                    </a>
                                 }
                             </td>
                         </tr>

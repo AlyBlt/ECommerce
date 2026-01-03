@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
-using ECommerce.Application.ViewModels;
+using ECommerce.Web.Mvc.Models.Favorite;
+using ECommerce.Web.Mvc.Models.Cart;
 
 namespace ECommerce.Web.Mvc.Helpers
 {
@@ -45,6 +46,50 @@ namespace ECommerce.Web.Mvc.Helpers
         public static void ClearFavorites(HttpContext httpContext)
         {
             httpContext.Session.Remove(SessionFavoritesKey);
+        }
+
+        // Add to cart with session (login olmadan)
+         public static void AddToCart(HttpContext httpContext, int productId, string name, decimal price, int quantity = 1, string? imageUrl = null)
+        {
+            var cart = GetCart(httpContext);
+
+            // Ürün zaten varsa miktarı artır
+            var existingItem = cart.Items.Find(i => i.ProductId == productId);
+            if (existingItem != null)
+            {
+                existingItem.Quantity += (byte)quantity;
+            }
+            else
+            {
+                cart.Items.Add(new CartItemViewModel
+                {
+                    ProductId = productId,
+                    Name = name,
+                    Price = price,
+                    Quantity = (byte)quantity,
+                    ImageUrl = imageUrl
+
+                });
+            }
+
+            SaveCart(httpContext, cart);
+        }
+
+        public static void AddToCart(HttpContext httpContext, CartItemViewModel item)
+        {
+            var cart = GetCart(httpContext);
+
+            var existingItem = cart.Items.FirstOrDefault(i => i.ProductId == item.ProductId);
+            if (existingItem != null)
+            {
+                existingItem.Quantity += item.Quantity;
+            }
+            else
+            {
+                cart.Items.Add(item);
+            }
+
+            SaveCart(httpContext, cart);
         }
     }
 }

@@ -1,10 +1,13 @@
-﻿@model ECommerce.Application.ViewModels.OrderDetailsViewModel
+﻿@model ECommerce.Web.Mvc.Models.Order.OrderDetailsViewModel
 @{
     ViewData["Title"] = "Order Details";
-    Layout = "~/Views/Shared/_OganiLayout.cshtml";
+   
+
+    // Toplam tutarı item'lerin toplamından hesaplıyoruz
+    var totalAmount = Model.Items.Sum(i => i.TotalPrice);
 }
-
-
+@if (User.IsInRole("Buyer") || User.IsInRole("Seller"))
+{
 <!-- Order Details Section -->
 <section class="checkout spad">
     <div class="container">
@@ -26,8 +29,18 @@
                         <div class="col-md-6 mb-2">
                             <strong>Payment:</strong> @Model.PaymentMethod
                         </div>
+                            <div class="col-md-6 mb-2">
+                                <strong>Delivery Name:</strong> @Model.DeliveryFullName
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <strong>Delivery Phone:</strong> @Model.DeliveryPhone
+                            </div>
+                            <!-- Delivery Address-->
+                            <div class="col-md-6 mb-2">
+                                <strong>Delivery Address:</strong> @Model.PaymentInformation.DeliveryAddress
+                            </div>
                         <div class="col-md-6 mb-2">
-                            <strong>Total Price:</strong> @Model.TotalPrice ₺
+                            <strong>Total Price:</strong> $ @totalAmount.ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("en-US")) 
                         </div>
                     </div>
 
@@ -62,7 +75,6 @@
                             <label>Address</label>
                             <div class="profile__info-box">@Model.UserInformation.Address</div>
                         </div>
-
                     </div>
 
                 </div>
@@ -89,12 +101,12 @@
                             {
                                 <tr>
                                     <td class="shoping__cart__item">
-                                        <img src="~/img/cart/cart-1.jpg" alt="">
+                                        <img src="@Url.Content(item.ImageUrl)" alt="@item.ProductName" style="width: 80px; height: 80px;">
                                         <h5>@item.ProductName</h5>
                                     </td>
                                     <td class="shoping__cart__quantity">@item.Quantity</td>
-                                    <td class="shoping__cart__price">@item.UnitPrice ₺</td>
-                                    <td class="shoping__cart__total">@item.TotalPrice ₺</td>
+                                    <td class="shoping__cart__price">$ @item.UnitPrice.ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("en-US"))</td>
+                                    <td class="shoping__cart__total">$ @item.TotalPrice.ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("en-US"))</td>
                                 </tr>
                             }
                         </tbody>
@@ -106,12 +118,19 @@
         <!-- TOTAL AMOUNT -->
         <div class="row mt-4">
             <div class="col-lg-12 text-end">
-                <h4><strong>Total Amount:</strong> @Model.TotalPrice ₺</h4>
+                <h4><strong>Total Amount:</strong> $ @totalAmount.ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("en-US"))</h4>
             </div>
         </div>
 
     </div>
 </section>
+}
+else
+{
+    <div class="alert alert-warning text-center mt-4">
+        You are not authorized to access this page.
+    </div>
+}
 
 <style>
     .profile__info-box {

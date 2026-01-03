@@ -1,9 +1,10 @@
-﻿@model ECommerce.Application.ViewModels.UserInformationViewModel
+﻿@model ECommerce.Web.Mvc.Models.User.UserInformationViewModel
 @{
     ViewData["Title"] = "User Information";
-    Layout = "~/Views/Shared/_OganiLayout.cshtml";
+    
 }
-
+@if (User.IsInRole("Buyer") || User.IsInRole("Seller"))
+{
 
 <!-- Checkout User Information -->
 <section class="checkout spad">
@@ -61,6 +62,13 @@
         </div>
     </div>
 </section>
+}
+else
+{
+    <div class="alert alert-warning text-center mt-4">
+        You are not authorized to access this page.
+    </div>
+}
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

@@ -1,7 +1,7 @@
-﻿@model ECommerce.Data.Entities.CategoryEntity
+﻿@model ECommerce.Admin.Mvc.Models.Category.CategoryCreateEditViewModel
 
 @{
-    ViewData["Title"] = "Create/Edit Category";
+    ViewData["Title"] = "Create Category";
     Layout = "_SbAdminLayout";
 }
 
@@ -9,8 +9,8 @@
 
 <div class="card shadow mb-4">
     <div class="card-body">
-        <form asp-action="@ViewData["Title"].ToString().Contains("Create") ? " Create" : "Edit" " method="post">
-            <input type="hidden" asp-for="Id" />
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="All" class="text-danger"></div>
 
             <div class="form-group">
                 <label asp-for="Name" class="font-weight-bold"></label>
@@ -20,7 +20,7 @@
 
             <div class="form-group">
                 <label asp-for="Color" class="font-weight-bold"></label>
-                <input asp-for="Color" type="color" class="form-control" />
+                <input asp-for="Color" class="form-control" type="text" placeholder="#abc123" />
                 <span asp-validation-for="Color" class="text-danger"></span>
             </div>
 
@@ -30,8 +30,14 @@
                 <span asp-validation-for="IconCssClass" class="text-danger"></span>
             </div>
 
-            <button type="submit" class="btn btn-primary mt-2">Save</button>
-            <a class="btn btn-secondary mt-2" href="@Url.Action("List")">Cancel</a>
+            <button type="submit" class="btn btn-primary mt-2">Create</button>
+            <a class="btn btn-secondary mt-2" asp-action="List">Cancel</a>
         </form>
     </div>
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

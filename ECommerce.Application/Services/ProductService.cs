@@ -1,112 +1,212 @@
-﻿using ECommerce.Application.Interfaces;
-using ECommerce.Application.ViewModels;
-using ECommerce.Data;
-using ECommerce.Data.DbContexts;
-using ECommerce.Data.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using ECommerce.Application.DTOs.Product;
+using ECommerce.Application.DTOs.ProductComment;
+using ECommerce.Application.Interfaces.Repositories;
+using ECommerce.Application.Interfaces.Services;
+using ECommerce.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ECommerce.Application.Services
 {
     public class ProductService : IProductService
     {
-        private readonly ECommerceDbContext _db;
+        private readonly IProductRepository _productRepository;
 
-        public ProductService(ECommerceDbContext db)
+        public ProductService(IProductRepository productRepository)
         {
-            _db = db;
+            _productRepository = productRepository;
         }
+
 
         // ------------------- CRUD -------------------
-        public IEnumerable<ProductEntity> GetAll() =>
-            _db.Products.Include(p => p.Category)
-                        .Include(p => p.Seller)
-                        .Include(p => p.Comments)
-                        .ToList();
-
-        public ProductEntity? Get(int id) =>
-            _db.Products.Include(p => p.Category)
-                        .Include(p => p.Seller)
-                        .Include(p => p.Comments)
-                        .FirstOrDefault(p => p.Id == id);
-
-        public void Add(ProductEntity product)
+        // ------------------- READ (DTO Dönüşümlü) -------------------
+        public async Task<IEnumerable<ProductDTO>> GetAllAsync()
         {
-            _db.Products.Add(product);
-            _db.SaveChanges();
+            var products = await _productRepository.GetAllWithIncludesAsync();
+            return products.Select(MapToDto).ToList();
         }
 
-        public void Update(ProductEntity product)
+        public async Task<ProductDTO?> GetAsync(int id)
         {
-            _db.Products.Update(product);
-            _db.SaveChanges();
+            var product = await _productRepository.GetByIdWithIncludesAsync(id);
+            return product == null ? null : MapToDto(product);
         }
 
-        public void Delete(int id)
+        // ------------------- WRITE -------------------
+        public async Task AddAsync(ProductDTO dto)
         {
-            var product = _db.Products.Find(id);
-            if (product != null)
+            var entity = new ProductEntity
             {
-                _db.Products.Remove(product);
-                _db.SaveChanges();
-            }
+                Name = dto.Name,
+                Price = dto.Price,
+                OldPrice = dto.OldPrice,
+                Details = dto.Details,
+                StockAmount = dto.StockAmount,
+                CategoryId = dto.CategoryId,
+                SellerId = dto.SellerId,
+                IsFeatured = dto.IsFeatured,
+                Enabled = true,
+                CreatedAt = DateTime.Now
+            };
+
+            await _productRepository.AddAsync(entity);
+            await _productRepository.SaveAsync();
         }
 
-        public void ToggleStatus(int id)
+        public async Task UpdateAsync(ProductDTO dto)
         {
-            var product = _db.Products.Find(id);
+            var entity = await _productRepository.GetByIdAsync(dto.Id);
+            if (entity == null) throw new Exception("Product not found");
+
+            // Alanları güncelle
+            entity.Name = dto.Name;
+            entity.Price = dto.Price;
+            entity.OldPrice = dto.OldPrice;
+            entity.Details = dto.Details;
+            entity.StockAmount = dto.StockAmount;
+            entity.CategoryId = dto.CategoryId;
+            entity.IsFeatured = dto.IsFeatured;
+            entity.Enabled = dto.Enabled;
+
+            await _productRepository.UpdateAsync(entity);
+            await _productRepository.SaveAsync();
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            var product = await _productRepository.GetByIdWithIncludesAsync(id);
+
+            if (product == null)
+                throw new ArgumentException("Product not found");
+
+            // Burada ürün ile ilişkili yorumlar ve görseller cascade delete ile otomatik silinir
+            await _productRepository.DeleteAsync(product);
+            await _productRepository.SaveAsync();
+        }
+
+
+        public async Task ToggleStatusAsync(int id)
+        {
+            var product = await _productRepository.GetByIdAsync(id);
             if (product != null)
             {
                 product.Enabled = !product.Enabled;
-                _db.SaveChanges();
+                await _productRepository.SaveAsync();
             }
         }
 
         // ------------------- COMMENT -------------------
-        public void AddComment(int productId, ProductCommentEntity comment)
+        public async Task AddCommentAsync(int productId, ProductCommentDTO commentDto)
         {
-            var product = _db.Products.Include(p => p.Comments)
-                                      .FirstOrDefault(p => p.Id == productId);
+            // Satın alma kontrolü
+            var hasPurchased = await _productRepository.HasUserPurchasedProductAsync(commentDto.UserId, productId);
+            if (!hasPurchased)
+            {
+                throw new InvalidOperationException("You can only comment on products you have purchased.");
+            }
+            var product = await _productRepository.GetByIdWithIncludesAsync(productId);
             if (product != null)
             {
-                comment.CreatedAt = DateTime.Now;
-                product.Comments ??= new List<ProductCommentEntity>();
-                product.Comments.Add(comment);
-                _db.SaveChanges();
+                var commentEntity = new ProductCommentEntity
+                {
+                    ProductId = productId,
+                    UserId = commentDto.UserId,
+                    Text = commentDto.Text,
+                    StarCount = commentDto.StarCount,
+                    CreatedAt = DateTime.Now,
+                    IsConfirmed = false // Admin onayı bekler
+                };
+
+                product.Comments.Add(commentEntity);
+                await _productRepository.SaveAsync();
             }
         }
 
-        // ------------------- FILTER / LISTING -------------------
-        public IEnumerable<ProductEntity> GetActiveProducts()
+        // ------------------- LISTING & SEARCH (DTO Dönüşümlü) -------------------
+        public async Task<List<ProductDTO>> GetActiveProductsAsync()
         {
-            return _db.Products.Include(p => p.Category)
-                               .Include(p => p.Seller)
-                               .Include(p => p.Comments)
-                               .Where(p => p.Enabled)
-                               .ToList();
+            var products = await _productRepository.GetActiveProductsAsync();
+            return products.Select(MapToDto).ToList();
+        }
+
+        public async Task<List<ProductDTO>> GetFeaturedProductsAsync()
+        {
+            var products = await _productRepository.GetFeaturedProductsAsync();
+            return products.Select(MapToDto).ToList();
+        }
+
+        public async Task<List<ProductDTO>> GetDiscountedProductsAsync()
+        {
+            var products = await _productRepository.GetDiscountedProductsAsync();
+            return products.Select(MapToDto).ToList();
+        }
+
+        public async Task<List<ProductDTO>> GetNewArrivalProductsAsync()
+        {
+            var products = await _productRepository.GetNewArrivalProductsAsync();
+            return products.Select(MapToDto).ToList();
+        }
+
+        public async Task<List<ProductDTO>> GetRelatedProductsAsync(int categoryId, int currentProductId)
+        {
+            var products = await _productRepository.GetRelatedProductsAsync(categoryId, currentProductId);
+            return products.Select(MapToDto).ToList();
+        }
+
+        public async Task<List<ProductDTO>> SearchProductsAsync(string query, string? category, byte? rating)
+        {
+            var products = await _productRepository.GetProductsForSearchAsync(query, category, rating);
+            return products.Select(MapToDto).ToList();
+        }
+
+        public async Task<bool> HasUserPurchasedProductAsync(int userId, int productId)
+        {
+            // Repository'deki o süper sorguyu çağırıyoruz
+            return await _productRepository.HasUserPurchasedProductAsync(userId, productId);
+        }
+
+        // ------------------- MAPPING (Merkezi Dönüşüm) -------------------
+        private ProductDTO MapToDto(ProductEntity entity)
+        {
+            // Sadece onaylı yorumları ayıklayalım
+            var confirmedComments = entity.Comments?.Where(c => c.IsConfirmed).ToList()
+                                    ?? new List<ProductCommentEntity>();
+            return new ProductDTO
+            {
+                Id = entity.Id,
+                Name = entity.Name,
+                Price = entity.Price,
+                OldPrice = entity.OldPrice,
+                Details = entity.Details,
+                StockAmount = entity.StockAmount,
+                Enabled = entity.Enabled,
+                IsFeatured = entity.IsFeatured,
+                CategoryId = entity.CategoryId,
+                CategoryName = entity.Category?.Name ?? "Kategorisiz",
+                SellerId = entity.SellerId,
+                SellerName = entity.Seller != null ? $"{entity.Seller.FirstName} {entity.Seller.LastName}" : "Bilinmeyen Satıcı",
+                CreatedAt = entity.CreatedAt,
+                Rating = entity.Rating,
+                ReviewCount = confirmedComments.Count,
+                MainImageUrl = entity.Images?.FirstOrDefault(i => i.IsMain)?.Url
+                               ?? entity.Images?.FirstOrDefault()?.Url
+                               ?? "/img/product/default.jpg",
+                // KRİTİK DÜZELTME 2: Yorum listesini DTO'ya aktaralım (Details sayfasında görünmesi için)
+                Comments = confirmedComments.Select(c => new ProductCommentDTO
+                {
+                    Id = c.Id,
+                    Text = c.Text,
+                    StarCount = c.StarCount,
+                    CreatedAt = c.CreatedAt,
+                    UserName = c.User != null ? $"{c.User.FirstName} {c.User.LastName}" : "Müşteri",
+                    IsConfirmed = c.IsConfirmed
+                }).ToList()
+            };
         }
 
 
-        // ------------------- FEATURED PRODUCTS -------------------
-
-        // Popüler Ürünleri
-        public IEnumerable<ProductEntity> GetPopularProducts()
-        {
-            return _db.Products.Where(p => p.IsFeatured).OrderByDescending(p => p.CreatedAt).Take(5).ToList();
-        }
-
-        // İndirimli Ürünleri
-        public IEnumerable<ProductEntity> GetDiscountedProducts()
-        {
-            return _db.Products.Where(p => p.OldPrice > p.Price).OrderByDescending(p => p.CreatedAt).Take(5).ToList();
-        }
-
-        // Yeni Gelen Ürünleri
-        public IEnumerable<ProductEntity> GetNewArrivalProducts()
-        {
-            return _db.Products.OrderByDescending(p => p.CreatedAt).Take(5).ToList();
-        }
     }
 }
+

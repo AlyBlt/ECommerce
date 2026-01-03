@@ -1,0 +1,27 @@
+﻿@model ECommerce.Admin.Mvc.Models.User.UserViewModel
+
+@{
+    ViewData["Title"] = "Profile";
+}
+
+<div class="container mt-4">
+    <h1 class="mb-4">Admin Profile</h1>
+
+    <div class="card shadow-sm" style="max-width: 600px;">
+        <div class="card-body d-flex align-items-center">
+            <!-- Profil resmi -->
+            <img src="~/img/undraw_female_profile.svg" alt="Profile Image" class="rounded-circle mr-3" style="width: 80px; height: 80px;">
+
+            <!-- Admin bilgileri -->
+            <div>
+                <h4>@Model.FirstName @Model.LastName</h4>
+                <p class="text-muted">
+                    Role: @(Model.RoleName ?? "Unknown")
+                </p>
+                <p>Email: @Model.Email</p>
+                <p>Phone: @Model.Phone</p>
+                <p>Address: @Model.Address</p>
+            </div>
+        </div>
+    </div>
+</div>

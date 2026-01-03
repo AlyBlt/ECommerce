@@ -1,0 +1,23 @@
+﻿@model ECommerce.Admin.Mvc.Models.Comment.CommentViewModel
+@{
+    ViewData["Title"] = "Reject Comment";
+}
+
+<h1 class="h3 mb-4 text-gray-800">Reject Comment</h1>
+
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <h5>Are you sure you want to reject this comment?</h5>
+
+        <p><strong>User:</strong> @Model.UserName</p>
+        <p><strong>Product:</strong> @Model.ProductName</p>
+        <p><strong>Comment:</strong> @Model.Text</p>
+        <p><strong>Rating:</strong> @Model.Rating</p>
+
+        <form asp-controller="ProductComment" asp-action="RejectComment" asp-route-id="@Model.Id" method="post">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-danger">Yes, Reject</button>
+            <a asp-action="List" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>

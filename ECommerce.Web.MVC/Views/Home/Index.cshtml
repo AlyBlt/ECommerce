@@ -1,38 +1,70 @@
-﻿@model ECommerce.Application.ViewModels.HomePageViewModel
+﻿@model ECommerce.Web.Mvc.Models.Home.HomePageViewModel
 @{
     ViewData["Title"] = "Home Page";
+    var isAdmin = User.IsInRole("Admin");
+    var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
+    var isBuyerOrSeller = User.IsInRole("Buyer") || User.IsInRole("Seller");
 }
+
 
 <!-- HERO SECTION -->
 <section class="hero">
     <div class="container">
         <div class="row">
             <!-- Left Category Menu -->
-            <div class="col-lg-3">
-                <div class="hero__categories">
-                    <div class="hero__categories__all">
-                        <i class="fa fa-bars"></i>
-                        <span>All Categories</span>
-                    </div>
-                    <ul>
-                        @foreach (var cat in Model.Categories)
-                        {
-                            <li>
-                                <a href="/listing?category=@cat.Name">@cat.Name</a>
-                            </li>
-                        }
-                    </ul>
-                </div>
+           <!-- Left Category Menu -->
+    <div class="col-lg-3">
+    <div class="hero__categories">
+        <div class="hero__categories__all">
+            <i class="fa fa-bars"></i>
+            <span>All Categories</span>
+        </div>
+        @if (!isAdmin && Model.Categories != null)  @* Admin dışındaki kullanıcılar için kategori listesi *@
+        {
+            <ul>
+                @foreach (var cat in Model.Categories)
+                {
+                    <li>
+                        <a href="@Url.Action("Listing", new { category = cat.Name, page = 1 })">
+                            @cat.Name
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+        else
+                @* Admin için kategori linklerinin gizlenmesi *@
+        {
+            <ul>
+                @foreach (var cat in Model.Categories)
+                {
+                    <li class="disabled">
+                        <span>@cat.Name</span>
+                    </li>
+                }
+            </ul>
+            <div class="alert alert-danger">
+                <strong>Access Denied:</strong> Admins cannot view products in categories on the user interface.
             </div>
-
+        }
+    </div>
+    </div>
+            
             <!-- Right Hero Content -->
             <div class="col-lg-9">
                 <div class="hero__search">
                     <div class="hero__search__form">
-                        <form>
-                            <input type="text" placeholder="What do you need?">
-                            <button type="submit" class="site-btn">SEARCH</button>
-                        </form>
+                        @if (!isAdmin)
+                        {
+                            <form method="get" action="@Url.Action("Search", "Product")">
+                                <input type="text" name="query" placeholder="Search for a product..." value="@ViewBag.Query">
+                                <button type="submit" class="site-btn">SEARCH</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <p class="text-center">As an admin, you are not authorized to search products here.</p>
+                        }
                     </div>
 
                     <div class="hero__search__phone">
@@ -44,6 +76,7 @@
                             <span>support 24/7 time</span>
                         </div>
                     </div>
+
                 </div>
 
                @*  SPECIAL OFFERS/NEW DISCOUNTS.. *@
@@ -58,7 +91,8 @@
                                             <span style="font-size:40px; font-weight:bold;">Special Offer</span>
                                             <h2>Free Shipping<br>On Orders Over $30</h2>
                                             <p style="font-weight:bold;">Shop your favorites and enjoy fast & free delivery.</p>
-                                            <a href="/listing" class="primary-btn">SHOP NOW</a>
+                                            <!-- Link to Listing page with 'Free Shipping' category -->
+                                            <a href="@Url.Action("Listing", "Home", new { filter = "free-shipping", page = 1 })" class="primary-btn">SHOP NOW</a>
                                         </div>
                                     </div>
                                     <div class="my-slide" style="background-image: url('@Url.Content("~/img/hero/sale-banner.jpg?v2")');">
@@ -66,7 +100,8 @@
                                             <span style="font-size:40px; font-weight:bold;">Limited Time</span>
                                             <h2>Save Up To 40%</h2>
                                             <p>Don't miss exclusive discounts across all categories.</p>
-                                            <a href="/listing" class="primary-btn">BROWSE DEALS</a>
+                                            <!-- Link to Listing page with 'Discounted' category -->
+                                            <a href="@Url.Action("Listing", "Home", new { filter = "on-sale", page = 1 })" class="primary-btn">BROWSE DEALS</a>
                                         </div>
                                     </div>
                                     <div class="my-slide" style="background-image: url('@Url.Content("~/img/hero/new-arrivals.jpg?v2")');">
@@ -74,7 +109,8 @@
                                             <span style="font-size:40px; font-weight:bold;">New Arrivals</span>
                                             <h2>Fresh Products<br>Just Landed</h2>
                                             <p>Explore the latest additions curated for you.</p>
-                                            <a href="/listing" class="primary-btn">DISCOVER</a>
+                                            <!-- Link to Listing page with 'New Arrivals' category -->
+                                            <a href="@Url.Action("Listing", "Home", new { filter = "new-arrivals", page = 1 })" class="primary-btn">DISCOVER</a>
                                         </div>
                                     </div>
                                     <!-- Arrows -->
@@ -99,7 +135,7 @@
                 {
                     <div class="col-lg-3">
                         <div class="categories__item set-bg" data-setbg="@Url.Content(item.ImageUrl)">
-                            <h5 style="border-radius:10px;"><a href="#" style="border-radius:10px;"> @item.Price.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("en-US")) </a></h5>
+                            <h5 style="border-radius:10px; font-size: 14px; padding: 5px;"><a href="#" style="border-radius:10px; font-size: 14px; padding: 5px;"> @item.Price.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("en-US")) </a></h5>
                             <span>@((int)((item.OldPrice - item.Price) * 100 /item.OldPrice)) % Discount</span>
                         </div>
                     </div> 
@@ -133,17 +169,13 @@
                 <div class="col-lg-3 col-md-4 col-sm-6 mix popular">
                     <div class="featured__item">
                         <div class="featured__item__pic set-bg" data-setbg="@Url.Content(product.ImageUrl)">
-                            <ul class="featured__item__pic__hover">
-                                <li><a href="#"><i class="fa fa-heart"></i></a></li>
-                                <li><a href="#"><i class="fa fa-retweet"></i></a></li>
-                                <li><a asp-controller="Cart" asp-action="AddProduct" asp-route-id="@product.Id"><i class="fa fa-shopping-cart"></i></a></li>
-                            </ul>
+                            <ul class="featured__item__pic__hover"></ul>
                         </div>
                              <div class="featured__item__text">
-                                <h6>
+                                <h6 class="fw-bold">
                                     <a asp-controller="Home"
                                        asp-action="ProductDetail"
-                                       asp-route-id="@product.Id">
+                                       asp-route-id="@product.Id" style="font-size: 18px;">
                                         @product.Name
                                     </a>
                                 </h6>
@@ -181,14 +213,37 @@
                 <div class="col-lg-3 col-md-4 col-sm-6 mix new-arrival" style="display:none;">
                     <div class="featured__item">
                         <div class="featured__item__pic set-bg" data-setbg="@Url.Content(product.ImageUrl)">
-                            <ul class="featured__item__pic__hover">
-                                <li><a href="#"><i class="fa fa-heart"></i></a></li>
-                                <li><a href="#"><i class="fa fa-retweet"></i></a></li>
-                                <li><a asp-controller="Cart" asp-action="AddProduct" asp-route-id="@product.Id"><i class="fa fa-shopping-cart"></i></a></li>
-                            </ul>
+                            <ul class="featured__item__pic__hover"></ul>
                         </div>
                         <div class="featured__item__text">
-                            <h6><a asp-controller="Home" asp-action="ProductDetail" asp-route-id="@product.Id">@product.Name</a></h6>
+                            <h6 class="fw-bold">
+                                <a asp-controller="Home"
+                                   asp-action="ProductDetail"
+                                   asp-route-id="@product.Id" style="font-size: 18px;">
+                                    @product.Name
+                                </a>
+                            </h6>
+
+                            <div class="rating-area">
+                                <span class="stars">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        if (i <= product.Rating)
+                                        {
+                                            <i class="fa fa-star"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fa fa-star-o"></i>
+                                        }
+                                    }
+                                </span>
+
+                                <span class="review-count">
+                                    (@product.ReviewCount reviews)
+                                </span>
+                            </div>
+
                             <h5>@product.Price.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("en-US"))</h5>
                         </div>
                     </div>
@@ -219,7 +274,10 @@
             <div class="col-lg-4 col-md-4 col-sm-6">
                 <div class="blog__item">
                     <div class="blog__item__pic">
-                        <img src="/img/blog/blog-6.jpg?v2" alt="">
+                        <!-- Blog yazısının resmine link ekleyerek dış siteye yönlendirme -->
+                        <a href="https://www.siliconmadeacademy.com/" target="_blank">
+                            <img src="/img/blog/blog-6.jpg?v2" alt="Cooking Tips Photo">
+                        </a>
                     </div>
                     <div class="blog__item__text">
                         <ul>
@@ -234,7 +292,10 @@
             <div class="col-lg-4 col-md-4 col-sm-6">
                 <div class="blog__item">
                     <div class="blog__item__pic">
-                        <img src="/img/blog/blog-4.jpg?v2" alt="">
+                        <!-- Blog yazısının resmine link ekleyerek dış siteye yönlendirme -->
+                        <a href="https://www.siliconmadeacademy.com/" target="_blank">
+                            <img src="/img/blog/blog-4.jpg?v2" alt="Organic Foods Photo">
+                        </a>
                     </div>
                     <div class="blog__item__text">
                         <ul>
@@ -249,7 +310,10 @@
             <div class="col-lg-4 col-md-4 col-sm-6">
                 <div class="blog__item">
                     <div class="blog__item__pic">
-                        <img src="/img/blog/blog-3.jpg?v2" alt="">
+                        <!-- Blog yazısının resmine link ekleyerek dış siteye yönlendirme -->
+                        <a href="https://www.siliconmadeacademy.com/" target="_blank">
+                            <img src="/img/blog/blog-3.jpg?v2" alt="Fruits Photo">
+                        </a>
                     </div>
                     <div class="blog__item__text">
                         <ul>
@@ -272,6 +336,7 @@
         padding: 5px 10px;
         border-radius: 4px;
         font-weight: bold;
+
     }
 
   
@@ -294,6 +359,10 @@
         .rating-area .review-count {
             color: #666;
             margin-left: 5px;
+        }
+
+        .rating-area .stars {
+            color: #FFD700;
         }
 
 
@@ -365,18 +434,22 @@
 
 
 <script>
-    document.querySelectorAll('.featured__controls li').forEach(btn => {
-        btn.addEventListener('click', function(){
-            // active class
+       document.querySelectorAll('.featured__controls li').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Active class'ı ekleyip kaldırma
             document.querySelectorAll('.featured__controls li').forEach(li => li.classList.remove('active'));
             this.classList.add('active');
 
             const filter = this.getAttribute('data-filter');
+
+            // Tüm öğeleri kontrol et ve geçiş ile göster/gizle
             document.querySelectorAll('.featured__filter .mix').forEach(item => {
-                if(item.classList.contains(filter.substring(1))) {
-                    item.style.display = 'block';
+                if (item.classList.contains(filter.substring(1))) {
+                    // Eşleşen öğeye 'visible' sınıfını ekle, görünür yap
+                    item.classList.add('visible');
                 } else {
-                    item.style.display = 'none';
+                    // Eşleşmeyen öğeye 'visible' sınıfını kaldır, gizle
+                    item.classList.remove('visible');
                 }
             });
         });
@@ -421,3 +494,5 @@
         });
     });
 </script>
+
+

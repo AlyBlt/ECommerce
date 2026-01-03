@@ -1,9 +1,7 @@
-﻿@model IEnumerable<ECommerce.Application.ViewModels.CommentViewModel>
-
+﻿@model IEnumerable<ECommerce.Admin.Mvc.Models.Comment.CommentViewModel>
 @{
     ViewData["Title"] = "Comment List";
-    Layout = "_SbAdminLayout";
-}
+ }
 
 <h1 class="h3 mb-4 text-gray-800">Comments</h1>
 
@@ -15,12 +13,22 @@
     <div class="card-body">
         @if (TempData["SuccessMessage"] != null)
         {
-            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["SuccessMessage"]
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
         }
 
         @if (TempData["ErrorMessage"] != null)
         {
-            <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @TempData["ErrorMessage"]
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
         }
 
         <div class="table-responsive">
@@ -51,18 +59,23 @@
                                 {
                                     <span class="badge badge-success">Approved</span>
                                 }
+                                else if (item.IsRejected)
+                                {
+                                    <span class="badge badge-danger">Rejected</span>
+                                }
                                 else
                                 {
                                     <span class="badge badge-warning">Pending</span>
                                 }
                             </td>
                             <td>
-                                @if (!item.IsApproved)
+                                @if (!item.IsApproved && !item.IsRejected)
                                 {
-                                    <a asp-action="Approve"
-                                       asp-route-id="@item.Id"
-                                       class="btn btn-success btn-sm">
+                                    <a asp-controller="ProductComment" asp-action="ApproveForm" asp-route-id="@item.Id" class="btn btn-success btn-sm mb-2">
                                         <i class="fas fa-check"></i> Approve
+                                    </a>
+                                    <a asp-controller="ProductComment" asp-action="RejectForm" asp-route-id="@item.Id" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-times"></i> Reject
                                     </a>
                                 }
                                 else

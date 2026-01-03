@@ -1,7 +1,18 @@
-﻿@model ECommerce.Application.ViewModels.CartViewModel
+﻿@model ECommerce.Web.Mvc.Models.Cart.CartViewModel
 @{
     ViewData["Title"] = "My Cart";
+    var isAdmin = User.IsInRole("Admin");
+    var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
+    var isBuyerOrSeller = User.IsInRole("Buyer") || User.IsInRole("Seller");
 }
+@if (isAdmin)
+{
+    <div class="alert alert-danger">
+        You are not authorized to view or modify the cart. Please proceed to the admin dashboard.
+    </div>
+}
+else
+{
 
 <section class="shoping-cart spad">
     <div class="container">
@@ -9,21 +20,31 @@
         <h2 class="mb-4">My Cart</h2>
 
         <!-- Success Message -->
-        @if (TempData["Message"] != null)
+        @if (TempData["Success"] != null)
         {
             <div class="alert alert-success alert-dismissible fade show" role="alert">
-                @TempData["Message"]
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+                @TempData["Success"]
+                <button type="button" class="close" data-dismiss="alert">
+                    <span>&times;</span>
                 </button>
             </div>
         }
 
-        <!-- Clear Cart Button -->
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="close" data-dismiss="alert">
+                        <span>&times;</span>
+                    </button>
+                </div>
+            }
+
+
+            <!-- Clear Cart Button -->
         <form asp-controller="Cart" asp-action="Clear" method="post" class="mb-4">
             <button type="submit" class="primary-btn">Clear Cart</button>
         </form>
-
         @if (Model.Items.Any())
         {
             <div class="shoping__cart__table">
@@ -42,16 +63,21 @@
                         @foreach (var item in Model.Items)
                         {
                             <tr>
-                                <td class="shoping__cart__item">
-                                    <h5>@item.Name</h5>
+                                <td class="shoping__cart__item d-flex align-items-center">
+                                    <img src="@(!string.IsNullOrEmpty(item.ImageUrl) ? Url.Content(item.ImageUrl) : Url.Content("~/img/product/default.jpg"))"
+                                         alt="@item.Name"
+                                         class="me-3"
+                                         style="width:70px; height:70px; object-fit:cover;" />
+                                    <h5 class="m-0">@item.Name</h5>
                                 </td>
 
                                 <td class="shoping__cart__price">
-                                    @item.Price ₺
+                                    $ @item.Price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
                                 </td>
 
                                 <td class="shoping__cart__quantity">
                                     <form asp-controller="Cart" asp-action="Edit" method="post" class="d-flex">
+                                            @Html.AntiForgeryToken()
                                         <input type="hidden" name="productId" value="@item.ProductId" />
                                         <input type="number" name="quantity" value="@item.Quantity"
                                                class="form-control" style="width:80px;" min="1" />
@@ -60,10 +86,11 @@
                                     </form>
                                 </td>
 
-                                <td class="shoping__cart__total">@item.TotalPrice ₺</td>
+                                <td class="shoping__cart__total">$ @item.TotalPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</td>
 
                                 <td class="shoping__cart__item__close">
                                     <form asp-controller="Cart" asp-action="Edit" method="post">
+                                            @Html.AntiForgeryToken()
                                         <input type="hidden" name="productId" value="@item.ProductId" />
                                         <input type="hidden" name="quantity" value="0" />
                                         <button type="submit" class="btn btn-danger btn-sm">Remove</button>
@@ -73,8 +100,8 @@
                         }
 
                         <tr>
-                            <td colspan="3" class="text-end"><strong>Total</strong></td>
-                            <td><strong>@Model.TotalPrice ₺</strong></td>
+                            <td colspan="3" class="shoping__cart__total"><strong>Total</strong></td>
+                            <td class="shoping__cart__total"><strong>@Model.TotalPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) $</strong></td>
                         </tr>
                     </tbody>
                 </table>
@@ -112,3 +139,5 @@
 
     </div>
 </section>
+}
+

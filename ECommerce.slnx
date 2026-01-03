@@ -1,6 +1,7 @@
 <Solution>
-  <Project Path="ECommerce.Admin.Mvc/ECommerce.Admin.Mvc.csproj" DisplayName="ECommerce.Admin.MVC" Id="aec0fb18-cc8b-433c-bd5d-6092333a6f4e" />
+  <Project Path="ECommerce.Admin.Mvc/ECommerce.Admin.Mvc.csproj" Id="aec0fb18-cc8b-433c-bd5d-6092333a6f4e" />
   <Project Path="ECommerce.Application/ECommerce.Application.csproj" Id="522ba953-7bfc-4990-852f-870fbc7bd79a" />
   <Project Path="ECommerce.Data/ECommerce.Data.csproj" Id="01dc9c6c-6f84-49c4-ab58-c496d73758af" />
-  <Project Path="ECommerce.Web.MVC/ECommerce.Web.MVC.csproj" />
+  <Project Path="ECommerce.Domain/ECommerce.Domain.csproj" Id="72442be9-f4dc-4c1d-a067-bbfd50e57d82" />
+  <Project Path="ECommerce.Web.Mvc/ECommerce.Web.Mvc.csproj" DisplayName="ECommerce.Web.Mvc" />
 </Solution>

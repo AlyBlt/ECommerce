@@ -1,0 +1,63 @@
+﻿@model ECommerce.Admin.Mvc.Models.Home.DashboardViewModel
+
+<div class="row">
+
+    <div class="col-md-3 mb-4">
+        <div class="card border-left-primary shadow h-100">
+            <div class="card-body">
+                <h6>Total Users</h6>
+                <span class="h4">@Model.TotalUsers</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card border-left-success shadow h-100">
+            <div class="card-body">
+                <h6>Total Products</h6>
+                <span class="h4">@Model.TotalProducts</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card border-left-info shadow h-100">
+            <div class="card-body">
+                <h6>Total Categories</h6>
+                <span class="h4">@Model.TotalCategories</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card border-left-warning shadow h-100">
+            <div class="card-body">
+                <h6>Pending Comments</h6>
+                <span class="h4">@Model.PendingComments</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="row">
+
+    <div class="col-md-3 mb-4">
+        <div class="card border-left-danger shadow h-100">
+            <div class="card-body">
+                <h6>Pending Sellers</h6>
+                <span class="h4">@Model.PendingSellers</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card border-left-secondary shadow h-100">
+            <div class="card-body">
+                <h6>Daily Sales</h6>
+                <span class="h4">$@Model.DailySales</span>
+            </div>
+        </div>
+    </div>
+
+</div>

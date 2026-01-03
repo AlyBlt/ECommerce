@@ -1,0 +1,121 @@
+﻿@using ECommerce.Web.Mvc
+@using ECommerce.Web.Mvc.Models
+@using ECommerce.Web.Mvc.Models.Category
+@using ECommerce.Web.Mvc.Models.Home
+@{
+    ViewData["Title"] = "Privacy Policy";
+    ViewData["PageTitle"] = ViewData["Title"];  // Dinamik başlık
+    var isAdmin = User.IsInRole("Admin");
+    var categories = ViewBag.Categories as List<CategoryViewModel> ?? new List<CategoryViewModel>();
+    var productListingViewModel = new ProductListingViewModel
+    {
+        Categories = categories
+    };
+ }
+
+@Html.Partial("_HeroSection", productListingViewModel)
+
+<!-- Privacy Policy Content -->
+<section class="privacy-policy spad">
+    <div class="container">
+        <div class="privacy-policy-box shadow">
+           
+            <p class="effective-date">Effective Date: January 1, 2025</p>
+
+            <p>
+                Your privacy is important to us. This Privacy Policy explains what information we collect,
+                how we use it, and how we protect your data when you use our website.
+            </p>
+
+            <h3>1. Information We Collect</h3>
+            <p>We may collect the following information:</p>
+            <ul>
+                <li>Personal information such as name, email, address, and phone number.</li>
+                <li>Payment details when making purchases (securely processed & encrypted).</li>
+                <li>Technical data such as IP address, browser type, device information, and cookies.</li>
+            </ul>
+
+            <h3>2. How We Use Your Information</h3>
+            <p>Your information may be used to:</p>
+            <ul>
+                <li>Process orders and provide customer support.</li>
+                <li>Send promotional emails and updates (only with consent).</li>
+                <li>Improve user experience and optimize site performance.</li>
+            </ul>
+
+            <h3>3. Data Security</h3>
+            <p>
+                We take data security seriously and implement industry-standard security measures
+                including encryption, secure servers, and restricted access.
+            </p>
+
+            <h3>4. Your Rights</h3>
+            <p>You have the right to:</p>
+            <ul>
+                <li>Access and update your personal information.</li>
+                <li>Request deletion of your data.</li>
+                <li>Opt out of marketing notifications at any time.</li>
+            </ul>
+
+            <h3>5. Cookies</h3>
+            <p>
+                Cookies help us personalize your experience and analyze website usage.
+                You can disable cookies in your browser settings, but some features may not work properly.
+            </p>
+
+            <h3>6. Changes to This Policy</h3>
+            <p>
+                We may update this Privacy Policy periodically. Any updates will be posted on this page.
+            </p>
+
+            <h3>7. Contact Us</h3>
+            <p>
+                For questions about this Privacy Policy, please contact us at
+                <a href="mailto:apple@helloworld.com">apple@helloworld.com</a>
+            </p>
+        </div>
+    </div>
+</section>
+
+<style>
+    .privacy-policy-box {
+        background: #ffffff;
+        padding: 40px 50px;
+        border-radius: 12px;
+        line-height: 1.7;
+        font-size: 16px;
+    }
+
+        .privacy-policy-box h2 {
+            font-size: 34px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .privacy-policy-box .effective-date {
+            font-size: 14px;
+            color: #777;
+            margin-bottom: 25px;
+        }
+
+        .privacy-policy-box h3 {
+            font-size: 22px;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .privacy-policy-box ul {
+            padding-left: 20px;
+            margin-bottom: 20px;
+        }
+
+            .privacy-policy-box ul li {
+                margin-bottom: 8px;
+            }
+
+        .privacy-policy-box p {
+            margin-bottom: 18px;
+        }
+</style>

@@ -1,16 +1,28 @@
 ﻿using ECommerce.Data.DbContexts;
-using ECommerce.Data.Entities;
+using ECommerce.Domain.Entities;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
 
 namespace ECommerce.Data
 {
-    public static class SeedData
+    internal static class SeedData
     {
+        public static void Seed(IServiceProvider serviceProvider)
+        {
+            using (var scope = serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<ECommerceDbContext>();
+
+                // Veritabanı yoksa oluşturur
+                context.Database.EnsureCreated();
+
+                // Mevcut Initialize metodunu çalıştırır
+                Initialize(context);
+            }
+        }
         public static void Initialize(ECommerceDbContext context)
         {
-            context.Database.EnsureCreated();
-
             var fixedDate = new DateTime(2025, 1, 1);
 
             // 1) ROLES
@@ -35,8 +47,8 @@ namespace ECommerce.Data
                 context.Users.AddRange(
                     new UserEntity
                     {
-                        Email = "admin@site.com",
-                        FirstName = "Admin",
+                        Email = "admin1@site.com",
+                        FirstName = "Admin1",
                         LastName = "User",
                         Password = "123",        // Ödev gereği düz şifre
                         RoleId = adminRoleId,
@@ -44,6 +56,22 @@ namespace ECommerce.Data
                         CreatedAt = fixedDate,
                         Address = "New York, USA",
                         Phone = "123-123-12-12",
+                       
+                        
+                    },
+                    new UserEntity
+                    {
+                        Email = "admin2@site.com",
+                        FirstName = "Admin2",
+                        LastName = "User",
+                        Password = "123",        
+                        RoleId = adminRoleId,
+                        Enabled = true,
+                        CreatedAt = fixedDate,
+                        Address = "Wisconsin, USA",
+                        Phone = "135-135-15-15",
+
+
                     },
                     new UserEntity
                     {
@@ -56,6 +84,8 @@ namespace ECommerce.Data
                         CreatedAt = fixedDate,
                         Address = "Los Angeles, USA",
                         Phone = "234-234-23-23",
+                        IsSellerApproved = true,
+                       
                     },
                     new UserEntity
                     {
@@ -68,6 +98,22 @@ namespace ECommerce.Data
                         CreatedAt = fixedDate,
                         Address = "Chicago, USA",
                         Phone = "345-345-34-34",
+                        IsSellerApproved = true,
+                        
+                    },
+                    new UserEntity
+                    {
+                        Email = "seller3@site.com",
+                        FirstName = "Emily",
+                        LastName = "Seller",
+                        Password = "123",
+                        RoleId = sellerRoleId,
+                        Enabled = true,
+                        CreatedAt = fixedDate,
+                        Address = "Florida, USA",
+                        Phone = "344-344-33-33",
+                        IsSellerApproved = true,
+                        
                     },
                     new UserEntity
                     {
@@ -92,7 +138,21 @@ namespace ECommerce.Data
                         CreatedAt = fixedDate,
                         Address = "Miami, USA",
                         Phone = "567-567-56-56",
-                    }
+                    },
+                     new UserEntity
+                     {
+                         Email = "buyer3@site.com",
+                         FirstName = "Jack",
+                         LastName = "Buyer",
+                         Password = "123",
+                         RoleId = buyerRoleId,
+                         Enabled = true,
+                         CreatedAt = fixedDate,
+                         Address = "Philadelphia, USA",
+                         Phone = "566-566-54-54",
+                         IsSellerApproved = false,
+                         HasPendingSellerRequest = true
+                     }
                 );
 
                 context.SaveChanges();
@@ -133,25 +193,142 @@ namespace ECommerce.Data
                 var meatFishCategoryId = context.Categories.First(c => c.Name == "Meat & Fish").Id;
                 var condimentsCategoryId = context.Categories.First(c => c.Name == "Condiments").Id;
 
-                var sellerId = context.Users.First(u => u.RoleId == context.Roles.First(r => r.Name == "Admin").Id).Id;
+               
+                var seller1Id = context.Users.First(u => u.Email == "seller1@site.com").Id;
+                var seller2Id = context.Users.First(u => u.Email == "seller2@site.com").Id;
 
                 context.Products.AddRange(
-                    new ProductEntity { Name = "Apple", Price = 3.5m, StockAmount = 50, CategoryId = fruitsCategoryId, SellerId = sellerId, CreatedAt = fixedDate, Enabled = true, Details = "Fresh red apples", ImageUrl= "~/img/product/product-8.jpg", IsFeatured = true },
-                    new ProductEntity { Name = "Banana", Price = 4m, StockAmount = 60, CategoryId = fruitsCategoryId, SellerId = sellerId, CreatedAt = fixedDate, Enabled = true, Details = "Sweet bananas", ImageUrl = "~/img/product/product-2.jpg", OldPrice=5m },
-                    new ProductEntity { Name = "Watermelon", Price = 2.5m, StockAmount = 40, CategoryId = fruitsCategoryId, SellerId = sellerId, CreatedAt = fixedDate, Enabled = true, Details = "Fresh Watermelon", ImageUrl = "~/img/product/product-7.jpg" },
-                    new ProductEntity { Name = "Grape", Price = 5m, StockAmount = 30, CategoryId = fruitsCategoryId, SellerId = sellerId, CreatedAt = fixedDate, Enabled = true, Details = "Organic Grape", ImageUrl = "~/img/product/product-4.jpg", OldPrice = 6m },
-                    new ProductEntity { Name = "Carrot", Price = 2m, StockAmount = 20, CategoryId = vegetablesCategoryId, SellerId = sellerId, CreatedAt = fixedDate, Enabled = true, Details = "Organic Carrot", ImageUrl = "~/img/product/product-15.jpg", OldPrice = 3m },
-                    new ProductEntity { Name = "Bell Pepper", Price = 3m, StockAmount = 80, CategoryId = vegetablesCategoryId, SellerId = sellerId, CreatedAt = fixedDate, Enabled = true, Details = "Fresh Bell Pepper", ImageUrl = "~/img/product/product-14.jpg" },
-                    new ProductEntity { Name = "Strawberry", Price = 8m, StockAmount = 25, CategoryId = fruitsCategoryId, SellerId = sellerId, CreatedAt = fixedDate, Enabled = true, Details = "Fresh Strawberry", ImageUrl = "~/img/product/product-13.jpg", IsFeatured = true },
-                    new ProductEntity { Name = "Chicken Egg", Price = 5m, StockAmount = 100, CategoryId = dairyCategoryId, SellerId = sellerId, CreatedAt = fixedDate, Enabled = true, Details = "Chicken Egg", ImageUrl = "~/img/product/product-16.jpg", OldPrice=6m },
-                    new ProductEntity { Name = "Croissant", Price = 2.5m, StockAmount = 40, CategoryId = bakeryCategoryId, SellerId = sellerId, CreatedAt = fixedDate, Enabled = true, Details = "Fresh Croissant", ImageUrl = "~/img/product/product-17.jpg" },
-                    new ProductEntity { Name = "Orange Juice", Price = 3m, StockAmount = 50, CategoryId = beveragesCategoryId, SellerId = sellerId, CreatedAt = fixedDate, Enabled = true, Details = "Fresh Orange Juice", ImageUrl = "~/img/product/product-18.jpg" },
-                    new ProductEntity { Name = "Chocolate Cookie", Price = 1.5m, StockAmount = 70, CategoryId = snacksCategoryId, SellerId = sellerId, CreatedAt = fixedDate, Enabled = true, Details = "Tasty Cookie", ImageUrl = "~/img/product/product-19.jpg", OldPrice=2m },
-                    new ProductEntity { Name = "Frozen Peas", Price = 2m, StockAmount = 30, CategoryId = frozenCategoryId, SellerId = sellerId, CreatedAt = fixedDate, Enabled = true, Details = "Frozen Peas", ImageUrl = "~/img/product/product-20.jpg", OldPrice=3m },
-                    new ProductEntity { Name = "Honey", Price = 6m, StockAmount = 25, CategoryId = organicCategoryId, SellerId = sellerId, CreatedAt = fixedDate, Enabled = true, Details = "Pure Organic Honey", ImageUrl = "~/img/product/product-21.jpg", IsFeatured = true },
-                    new ProductEntity { Name = "Chicken Breast", Price = 7m, StockAmount = 30, CategoryId = meatFishCategoryId, SellerId = sellerId, CreatedAt = fixedDate, Enabled = true, Details = "Fresh Chicken Breast", ImageUrl = "~/img/product/product-22.jpg", IsFeatured = true },
-                    new ProductEntity { Name = "Hot Sauce", Price = 4m, StockAmount = 60, CategoryId = condimentsCategoryId, SellerId = sellerId, CreatedAt = fixedDate, Enabled = true, Details = "Spicy Hot Sauce", ImageUrl = "~/img/product/product-23.jpg", OldPrice = 6m }
+                    new ProductEntity { Name = "Apple", Price = 3.5m, StockAmount = 50, CategoryId = fruitsCategoryId, SellerId = seller1Id, CreatedAt = new DateTime(2023, 1, 1), Enabled = true, Details = "Fresh red apples", IsFeatured = true },
+                    new ProductEntity { Name = "Banana", Price = 4m, StockAmount = 60, CategoryId = fruitsCategoryId, SellerId = seller1Id, CreatedAt = fixedDate, Enabled = true, Details = "Sweet bananas", OldPrice=5m },
+                    new ProductEntity { Name = "Watermelon", Price = 2.5m, StockAmount = 40, CategoryId = fruitsCategoryId, SellerId = seller1Id, CreatedAt = new DateTime(2025, 12, 17), Enabled = true, Details = "Fresh Watermelon" },
+                    new ProductEntity { Name = "Grape", Price = 5m, StockAmount = 30, CategoryId = fruitsCategoryId, SellerId = seller1Id, CreatedAt = new DateTime(2024, 10, 8), Enabled = true, Details = "Organic Grape", OldPrice = 6m },
+                    new ProductEntity { Name = "Carrot", Price = 2m, StockAmount = 20, CategoryId = vegetablesCategoryId, SellerId = seller1Id, CreatedAt = new DateTime(2017, 11, 23), Enabled = true, Details = "Organic Carrot", OldPrice = 3m },
+                    new ProductEntity { Name = "Bell Pepper", Price = 3m, StockAmount = 80, CategoryId = vegetablesCategoryId, SellerId = seller1Id, CreatedAt = new DateTime(2025, 11, 27), Enabled = true, Details = "Fresh Bell Pepper" },
+                    new ProductEntity { Name = "Strawberry", Price = 8m, StockAmount = 25, CategoryId = fruitsCategoryId, SellerId = seller1Id, CreatedAt = new DateTime(2015, 4, 18), Enabled = true, Details = "Fresh Strawberry", IsFeatured = true },
+                    new ProductEntity { Name = "Chicken Egg", Price = 5m, StockAmount = 100, CategoryId = dairyCategoryId, SellerId = seller1Id, CreatedAt = new DateTime(2025, 12, 16), Enabled = true, Details = "Chicken Egg", OldPrice=6m },
+                    new ProductEntity { Name = "Croissant", Price = 2.5m, StockAmount = 40, CategoryId = bakeryCategoryId, SellerId = seller1Id, CreatedAt = new DateTime(2016, 2, 3), Enabled = true, Details = "Fresh Croissant" },
+                    new ProductEntity { Name = "Orange Juice", Price = 3m, StockAmount = 50, CategoryId = beveragesCategoryId, SellerId = seller2Id, CreatedAt = new DateTime(2023, 4, 30), Enabled = true, Details = "Fresh Orange Juice", IsFeatured = true },
+                    new ProductEntity { Name = "Chocolate Cookie", Price = 1.5m, StockAmount = 70, CategoryId = snacksCategoryId, SellerId = seller2Id, CreatedAt = new DateTime(2025, 9, 15), Enabled = true, Details = "Tasty Cookie", OldPrice=2m },
+                    new ProductEntity { Name = "Frozen Peas", Price = 2m, StockAmount = 30, CategoryId = frozenCategoryId, SellerId = seller2Id, CreatedAt = new DateTime(2024, 5, 16), Enabled = true, Details = "Frozen Peas", OldPrice=3m },
+                    new ProductEntity { Name = "Honey", Price = 6m, StockAmount = 25, CategoryId = organicCategoryId, SellerId = seller2Id, CreatedAt = new DateTime(2025, 12, 18), Enabled = true, Details = "Pure Organic Honey", IsFeatured = true },
+                    new ProductEntity { Name = "Chicken Breast", Price = 7m, StockAmount = 30, CategoryId = meatFishCategoryId, SellerId = seller2Id, CreatedAt = new DateTime(2022, 7, 8), Enabled = true, Details = "Fresh Chicken Breast", IsFeatured = true },
+                    new ProductEntity { Name = "Hot Sauce", Price = 4m, StockAmount = 60, CategoryId = condimentsCategoryId, SellerId = seller2Id, CreatedAt = new DateTime(2024, 7, 2), Enabled = true, Details = "Spicy Hot Sauce", OldPrice = 6m }
 
+                );
+
+                context.SaveChanges();
+
+                var products = context.Products.ToDictionary(p => p.Name);
+
+               // PRODUCT IMAGES
+                context.ProductImages.AddRange(
+                    new ProductImageEntity
+                    {
+                        ProductId = products["Apple"].Id,
+                        Url = "~/img/product/product-8.jpg",
+                        CreatedAt = fixedDate,
+                        IsMain = true
+                    },
+                    new ProductImageEntity
+                    {
+                        ProductId = products["Banana"].Id,
+                        Url = "~/img/product/product-2.jpg",
+                        CreatedAt = fixedDate,
+                        IsMain = true
+                    },
+                    new ProductImageEntity
+                    {
+                        ProductId = products["Watermelon"].Id,
+                        Url = "~/img/product/product-7.jpg",
+                        CreatedAt = fixedDate,
+                        IsMain = true
+                    },
+                    new ProductImageEntity
+                    {
+                        ProductId = products["Grape"].Id,
+                        Url = "~/img/product/product-4.jpg",
+                        CreatedAt = fixedDate,
+                        IsMain = true
+                    },
+                    new ProductImageEntity
+                    {
+                        ProductId = products["Carrot"].Id,
+                        Url = "~/img/product/product-15.jpg",
+                        CreatedAt = fixedDate,
+                        IsMain = true
+                    },
+                    new ProductImageEntity
+                    {
+                        ProductId = products["Bell Pepper"].Id,
+                        Url = "~/img/product/product-14.jpg",
+                        CreatedAt = fixedDate,
+                        IsMain = true
+                    },
+                    new ProductImageEntity
+                    {
+                        ProductId = products["Strawberry"].Id,
+                        Url = "~/img/product/product-13.jpg",
+                        CreatedAt = fixedDate,
+                        IsMain = true
+                    },
+                    new ProductImageEntity
+                    {
+                        ProductId = products["Chicken Egg"].Id,
+                        Url = "~/img/product/product-16.jpg",
+                        CreatedAt = fixedDate,
+                        IsMain = true
+                    },
+                    new ProductImageEntity
+                    {
+                        ProductId = products["Croissant"].Id,
+                        Url = "~/img/product/product-17.jpg",
+                        CreatedAt = fixedDate,
+                        IsMain = true
+                    },
+                    new ProductImageEntity
+                    {
+                        ProductId = products["Orange Juice"].Id,
+                        Url = "~/img/product/product-18.jpg",
+                        CreatedAt = fixedDate,
+                        IsMain = true
+                    },
+                    new ProductImageEntity
+                    {
+                        ProductId = products["Chocolate Cookie"].Id,
+                        Url = "~/img/product/product-19.jpg",
+                        CreatedAt = fixedDate,
+                        IsMain = true
+                    },
+                    new ProductImageEntity
+                    {
+                        ProductId = products["Frozen Peas"].Id,
+                        Url = "~/img/product/product-20.jpg",
+                        CreatedAt = fixedDate,
+                        IsMain = true
+                    },
+                   new ProductImageEntity
+                    {
+                       ProductId = products["Honey"].Id,
+                       Url = "~/img/product/product-21.jpg",
+                        CreatedAt = fixedDate,
+                        IsMain = true
+                    },
+                    new ProductImageEntity
+                    {
+                        ProductId = products["Chicken Breast"].Id,
+                        Url = "~/img/product/product-22.jpg",
+                        CreatedAt = fixedDate,
+                        IsMain = true
+                    },
+                    new ProductImageEntity
+                    {
+                        ProductId = products["Hot Sauce"].Id,
+                        Url = "~/img/product/product-23.jpg",
+                        CreatedAt = fixedDate,
+                        IsMain = true
+                    }
+
+              
                 );
 
                 context.SaveChanges();
@@ -159,8 +336,14 @@ namespace ECommerce.Data
 
 
 
+
+            var buyers = context.Users
+                   .Where(u => u.RoleId == context.Roles.First(r => r.Name == "Buyer").Id)
+                   .OrderBy(u => u.Id) // ya da başka bir mantıklı sıralama
+                   .ToList();
+
             // 5) ADD COMMENTS (Yorumlar Eklemek)
-            if (!context.ProductComments.Any())
+            if (buyers.Any() && !context.ProductComments.Any())
             {
                 var firstProductId = context.Products.First().Id;
                 var secondProductId = context.Products.Skip(1).First().Id;
@@ -173,9 +356,10 @@ namespace ECommerce.Data
                 var ninthProductId = context.Products.Skip(8).First().Id;
                 var tenthProductId = context.Products.Skip(9).First().Id;
 
-                var firstUserId = context.Users.First(u => u.RoleId == context.Roles.First(r => r.Name == "Buyer").Id).Id;
-                var secondUserId = context.Users.Skip(1).First(u => u.RoleId == context.Roles.First(r => r.Name == "Buyer").Id).Id;
-                var thirdUserId = context.Users.Skip(2).First(u => u.RoleId == context.Roles.First(r => r.Name == "Buyer").Id).Id;
+            
+                var firstUserId = buyers[0].Id;  // Charlie
+                var secondUserId = buyers[1].Id; // Diana
+                var thirdUserId = buyers[2].Id;  // Jack
 
                 context.ProductComments.AddRange(
                     new ProductCommentEntity
@@ -189,11 +373,38 @@ namespace ECommerce.Data
                     },
                     new ProductCommentEntity
                     {
+                        ProductId = firstProductId,
+                        UserId = thirdUserId,
+                        StarCount = 4, 
+                        Text = "High quality, very fresh!",
+                        CreatedAt = fixedDate.AddDays(100),
+                        IsConfirmed = true
+                    },
+                    new ProductCommentEntity
+                    {
+                        ProductId = firstProductId,
+                        UserId = secondUserId,
+                        StarCount = 4, // Çok beğenilen ürün için yüksek puan
+                        Text = "Very tasty!",
+                        CreatedAt = fixedDate.AddDays(2),
+                        IsConfirmed = true
+                    },
+                    new ProductCommentEntity
+                    {
                         ProductId = secondProductId,
                         UserId = firstUserId,
                         StarCount = 4, // Oldukça beğenilen ama belki küçük bir eksikliği olan ürün
                         Text = "Tasty and sweet, loved it!",
-                        CreatedAt = fixedDate.AddDays(3),
+                        CreatedAt = fixedDate.AddDays(60),
+                        IsConfirmed = true
+                    },
+                    new ProductCommentEntity
+                    {
+                        ProductId = secondProductId,
+                        UserId = secondUserId,
+                        StarCount = 2, // Oldukça beğenilen ama belki küçük bir eksikliği olan ürün
+                        Text = "It wasn't fresh!",
+                        CreatedAt = fixedDate.AddDays(30),
                         IsConfirmed = true
                     },
                     new ProductCommentEntity
@@ -205,12 +416,23 @@ namespace ECommerce.Data
                         CreatedAt = fixedDate.AddDays(4),
                         IsConfirmed = true
                     },
+
+                     new ProductCommentEntity
+                     {
+                         ProductId = thirdProductId,
+                         UserId = thirdUserId,
+                         StarCount = 3, // Ortalama puan, ne çok beğenilmiş ne de çok kötü
+                         Text = "Not good enough!",
+                         CreatedAt = fixedDate.AddDays(40),
+                         IsConfirmed = true
+                     },
+
                     new ProductCommentEntity
                     {
                         ProductId = fourthProductId,
                         UserId = secondUserId,
                         StarCount = 2, // Zayıf beğenilen ürün, belki kalitesiz
-                        Text = "The quality is not great, very disappointed.",
+                        Text = "Very disappointed.",
                         CreatedAt = fixedDate.AddDays(5),
                         IsConfirmed = false
                     },
@@ -241,6 +463,15 @@ namespace ECommerce.Data
                         CreatedAt = fixedDate.AddDays(8),
                         IsConfirmed = true
                     },
+                     new ProductCommentEntity
+                     {
+                         ProductId = seventhProductId,
+                         UserId = thirdUserId,
+                         StarCount = 1, // Ortalama bir ürün
+                         Text = "Very bad! I couldn't even eat it!",
+                         CreatedAt = fixedDate.AddDays(80),
+                         IsConfirmed = true
+                     },
                     new ProductCommentEntity
                     {
                         ProductId = eighthProductId,
@@ -261,13 +492,31 @@ namespace ECommerce.Data
                     },
                     new ProductCommentEntity
                     {
+                        ProductId = ninthProductId,
+                        UserId = secondUserId,
+                        StarCount = 5, // Beğenilen ama küçük bir eleştiri
+                        Text = "Great product, packaging was perfect!",
+                        CreatedAt = fixedDate.AddDays(18),
+                        IsConfirmed = true
+                    },
+                    new ProductCommentEntity
+                    {
                         ProductId = tenthProductId,
                         UserId = firstUserId,
                         StarCount = 5, // Mükemmel ürün
                         Text = "Amazing taste, absolutely loved it!",
                         CreatedAt = fixedDate.AddDays(11),
                         IsConfirmed = true
-                    }
+                    },
+                     new ProductCommentEntity
+                     {
+                         ProductId = tenthProductId,
+                         UserId = secondUserId,
+                         StarCount = 5, // Mükemmel ürün
+                         Text = "Really loved it!",
+                         CreatedAt = fixedDate.AddDays(11),
+                         IsConfirmed = true
+                     }
                 );
 
                 context.SaveChanges();

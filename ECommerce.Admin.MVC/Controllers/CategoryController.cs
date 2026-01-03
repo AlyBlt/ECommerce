@@ -1,24 +1,44 @@
-﻿using ECommerce.Application.Interfaces;
-using ECommerce.Data.Entities;
+﻿using ECommerce.Admin.Mvc.Filters;
+using ECommerce.Admin.Mvc.Models.Category;
+using ECommerce.Application.DTOs.Category;
+using ECommerce.Application.Interfaces.Services;
+using ECommerce.Application.Services;
+using ECommerce.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ECommerce.Admin.MVC.Controllers
 {
     [Route("admin/category")]
+    [Authorize(Roles = "Admin")]
+    [ActiveUserAuthorize]
     public class CategoryController : Controller
     {
         private readonly ICategoryService _categoryService;
-
+        
         public CategoryController(ICategoryService categoryService)
         {
             _categoryService = categoryService;
         }
 
-        // /admin/category
+
+        // /admin/category  -- DTO -> ListViewModel Mapping
         [HttpGet("")]
-        public IActionResult List()
+        public async Task<IActionResult> List()
         {
-            var list = _categoryService.GetAll();
+            var dtos = await _categoryService.GetAllAsync();
+            var list = dtos.Select(c => new CategoryListViewModel
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Color = c.Color,
+                IconCssClass = c.IconCssClass
+            }).ToList();
+
             return View(list);
         }
 
@@ -27,64 +47,137 @@ namespace ECommerce.Admin.MVC.Controllers
         [HttpGet("create")]
         public IActionResult Create()
         {
-            return View();
+           return View();
         }
 
-
-        // POST: /admin/category/create
+        // CREATE POST
         [HttpPost("create")]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(CategoryEntity model)
+        public async Task<IActionResult> Create(CategoryCreateEditViewModel model)
         {
-            _categoryService.Add(model);
-            return RedirectToAction("List");
+            if (!ModelState.IsValid)
+                return View(model);
+
+            // ViewModel'den DTO'ya Manuel Mapping
+            var dto = new CategoryDTO
+            {
+                Name = model.Name,
+                Color = model.Color,
+                IconCssClass = model.IconCssClass
+            };
+
+            await _categoryService.AddAsync(dto);
+            TempData["Success"] = "Category created successfully!";
+            return RedirectToAction(nameof(List));
         }
 
-        // /admin/category/5/edit
+        // Edit GET (Formu görüntüle) -- DTO -> CreateEditViewModel Mapping
         [HttpGet("{id}/edit")]
-        public IActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
-            var model = _categoryService.Get(id);
-            if (model == null)
+            var dto = await _categoryService.GetAsync(id);
+            if (dto == null)
             {
-                TempData["ErrorMessage"] = "Category not found!";
-                return RedirectToAction("List");
+                TempData["Error"] = "Category not found!";
+                return RedirectToAction(nameof(List));
             }
-            return View(model);
+
+            var vm = new CategoryCreateEditViewModel
+            {
+                Id = dto.Id,
+                Name = dto.Name,
+                Color = dto.Color,
+                IconCssClass = dto.IconCssClass
+            };
+
+            return View(vm);
         }
 
-        // POST: /admin/category/edit
-        [HttpPost("edit")]
+        // Edit POST (Veriyi kaydetme işlemi) --- CreateEditViewModel -> DTO Mapping
+        [HttpPost("{id}/edit")]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(CategoryEntity model)
+        public async Task<IActionResult> Edit(CategoryCreateEditViewModel model)
         {
-            _categoryService.Update(model);
-            return RedirectToAction("List");
-        }
+            if (!ModelState.IsValid)
+                return View(model);
 
-        // /admin/category/5/delete
-        [HttpGet("{id}/delete")]
-        public IActionResult Delete(int id)
-        {
-            var model = _categoryService.Get(id);
-            if (model == null)
+            var dto = new CategoryDTO
             {
-                TempData["ErrorMessage"] = "Category not found!";
-                return RedirectToAction("List");
+                Id = model.Id,
+                Name = model.Name,
+                Color = model.Color,
+                IconCssClass = model.IconCssClass
+            };
+
+            try
+            {
+                await _categoryService.UpdateAsync(dto);
+                TempData["Success"] = "Category updated successfully!";
             }
-            return View(model);
+            catch (KeyNotFoundException)
+            {
+                TempData["Error"] = "Category not found!";
+            }
+
+            return RedirectToAction(nameof(List));
+           
         }
 
-        // POST: /admin/category/delete-confirmed
+
+        [HttpGet("{id}/delete")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var dto = await _categoryService.GetAsync(id);
+            if (dto == null)
+            {
+                TempData["Error"] = "Category not found!";
+                return RedirectToAction(nameof(List));
+            }
+
+            var vm = new CategoryCreateEditViewModel
+            {
+                Id = dto.Id,
+                Name = dto.Name,
+                Color = dto.Color,
+                IconCssClass = dto.IconCssClass
+            };
+
+            return View(vm);
+        }
+
+
+        // DELETE POST
         [HttpPost("delete-confirmed")]
         [ValidateAntiForgeryToken]
-        public IActionResult DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            _categoryService.Delete(id);
-            return RedirectToAction("List");
+            try
+            {
+                var category = await _categoryService.GetAsync(id);
+                if (category == null)
+                {
+                    TempData["Error"] = "Category not found!";
+                    return RedirectToAction("List");
+                }
+
+                // Kategoriye bağlı ürün varsa, silme işlemini engelle
+                bool hasProducts = await _categoryService.HasProductsAsync(id);
+                if (hasProducts)
+                {
+                    TempData["Error"] = "Cannot delete category with products. Remove or reassign products first.";
+                    return RedirectToAction("List");
+                }
+
+                await _categoryService.DeleteAsync(id);  // Asenkron silme işlemi
+                TempData["Success"] = "Category deleted successfully!";
+                return RedirectToAction("List");
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("List");
+            }
         }
-
-      
-
     }
+
 }
