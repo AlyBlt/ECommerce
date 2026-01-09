@@ -21,7 +21,9 @@ namespace ECommerce.Application.Services
             {
                 new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
                 new Claim(ClaimTypes.Name, userName),
-                new Claim(ClaimTypes.Role, role)
+                new Claim(ClaimTypes.Role, role),
+                // Yeni eklenen kısım:
+               new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
             var key = new SymmetricSecurityKey(
@@ -44,10 +46,10 @@ namespace ECommerce.Application.Services
         {
             var claims = new[]
             {
-        new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-        new Claim(ClaimTypes.Email, email),
-        new Claim("purpose", "password-reset")  // Şifre sıfırlama amacını belirtelim
-    };
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                new Claim(ClaimTypes.Email, email),
+                new Claim("purpose", "password-reset")  // Şifre sıfırlama amacını belirtelim
+            };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"]));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

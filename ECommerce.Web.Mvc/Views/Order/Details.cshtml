@@ -101,7 +101,11 @@
                             {
                                 <tr>
                                     <td class="shoping__cart__item">
-                                        <img src="@Url.Content(item.ImageUrl)" alt="@item.ProductName" style="width: 80px; height: 80px;">
+                                            @* --- TAGHELPER KULLANIMI --- *@
+                                            <my-img file-name="@item.ImageUrl"
+                                                    alt="@item.ProductName"
+                                                    style="width: 80px; height: 80px; object-fit: cover;"
+                                                    class="rounded shadow-sm" />
                                         <h5>@item.ProductName</h5>
                                     </td>
                                     <td class="shoping__cart__quantity">@item.Quantity</td>

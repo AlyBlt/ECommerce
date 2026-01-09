@@ -12,6 +12,9 @@ namespace ECommerce.Application.Interfaces.Repositories
         Task<List<UserEntity>> GetAllWithRolesAsync();
         Task<UserEntity?> GetByIdWithIncludesAsync(int id, bool includeOrders = false, bool includeProducts = false);
         Task<UserEntity?> GetByEmailAsync(string email);
+        
+        //yeni
+        Task<UserEntity?> GetByResetTokenAsync(string token);
     }
    
 }

@@ -2,11 +2,7 @@
 using ECommerce.Data.DbContexts;
 using ECommerce.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace ECommerce.Data.Repositories
 {
@@ -57,6 +53,13 @@ namespace ECommerce.Data.Repositories
             return await GetQueryable()
                 .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Email == email);
+        }
+
+        public async Task<UserEntity?> GetByResetTokenAsync(string token)
+        {
+            // Veritabanında ResetToken sütunu ile gelen token'ı karşılaştırıyoruz
+            return await GetQueryable()
+                .FirstOrDefaultAsync(u => u.PasswordResetToken == token);
         }
     }
 }

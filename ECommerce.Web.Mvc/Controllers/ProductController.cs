@@ -1,222 +1,44 @@
 ﻿using ECommerce.Application.DTOs.Product;
 using ECommerce.Application.DTOs.ProductComment;
+using ECommerce.Application.Filters;
 using ECommerce.Application.Interfaces.Services;
-using ECommerce.Application.Services;
-using ECommerce.Domain.Entities;
 using ECommerce.Web.Mvc.Models.Category;
 using ECommerce.Web.Mvc.Models.Comment;
 using ECommerce.Web.Mvc.Models.Home;
 using ECommerce.Web.Mvc.Models.Product;
-using ECommerce.Web.MVC.Filters;
+using ECommerce.Web.Mvc.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
-using System.Text;
 
 namespace ECommerce.Web.Mvc.Controllers
 {
     public class ProductController : Controller
     {
-        private readonly IProductService _productService;
-        private readonly ICategoryService _categoryService;
-       
-     
+        private readonly IProductService _productApiService;
+        private readonly ICategoryService _categoryApiService;
+        private readonly FileApiService _fileApiService;
 
-        public ProductController(IProductService productService, ICategoryService categoryService)
+        public ProductController(IProductService productApiService, ICategoryService categoryApiService, FileApiService fileApiService)
         {
-            _productService = productService;
-            _categoryService = categoryService;
-          
+            _productApiService = productApiService;
+            _categoryApiService = categoryApiService;
+            _fileApiService = fileApiService;
         }
 
         // Cookie Authentication içindeki NameIdentifier (UserId) claim'ini okur
-        private int GetCurrentUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-
-        
-        // ---------------- CREATE (GET) ----------------
-        [Authorize(Roles = "Seller")] // Sadece satıcılar girebilir
-        [ActiveUserAuthorize]
-        public async Task<IActionResult> Create()
+        private int GetCurrentUserId()
         {
-            await PopulateCategoriesAsync();
-            return View(new ProductCreateViewModel());
-        }
-
-        // ---------------- CREATE (POST) ----------------
-        [HttpPost]
-        [Authorize(Roles = "Seller")]
-        [ValidateAntiForgeryToken]
-        [ActiveUserAuthorize]
-        public async Task<IActionResult> Create(ProductCreateViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                await PopulateCategoriesAsync();
-                return View(model);
-            }
-
-            // ViewModel -> DTO
-            var dto = new ProductDTO
-            {
-                Name = model.Name,
-                CategoryId = model.CategoryId,
-                Price = model.Price,
-                OldPrice = model.OldPrice,
-                StockAmount = model.StockAmount,
-                Details = model.Details,
-                CreatedAt = DateTime.Now,
-                Enabled = true,
-                SellerId = GetCurrentUserId(),
-                MainImageUrl = model.ImageUrl
-
-            };
-
-            await _productService.AddAsync(dto);
-            TempData["Success"] = "Product added successfully.";
-            return RedirectToAction("MyProducts", "Profile");
-        }
-        // ---------------- EDIT (GET) ----------------
-        [Authorize(Roles = "Seller")]
-        [ActiveUserAuthorize]
-        public async Task<IActionResult> Edit(int id)
-        {
-            var dto = await _productService.GetAsync(id);
-            if (dto == null) return NotFound();
-
-            // Güvenlik: Başkasının ürününü düzenleyemez
-            if (dto.SellerId != GetCurrentUserId())
-            {
-                TempData["Error"] = "You are not authorized to edit this product.";
-                return RedirectToAction("MyProducts", "Profile");
-            }
-
-            await PopulateCategoriesAsync();
-            return View(MapToEditViewModel(dto)); // DTO alan sürüme gidiyor
-
-           
-        }
-
-        // ---------------- EDIT (POST) ----------------
-        [HttpPost]
-        [Authorize(Roles = "Seller")]
-        [ValidateAntiForgeryToken]
-        [ActiveUserAuthorize]
-        public async Task<IActionResult> Edit(ProductEditViewModel model)
-        {
-            var existingDto = await _productService.GetAsync(model.Id);
-            if (existingDto == null) return NotFound();
-            if (existingDto.SellerId != GetCurrentUserId()) return Forbid();
-
-            if (!ModelState.IsValid)
-            {
-                await PopulateCategoriesAsync();
-                return View(model);
-            }
-            // ViewModel -> DTO
-            existingDto.Name = model.Name;
-            existingDto.Price = model.Price;
-            existingDto.OldPrice = model.OldPrice;
-            existingDto.CategoryId = model.CategoryId;
-            existingDto.StockAmount = model.StockAmount;
-            existingDto.Details = model.Details;
-            existingDto.MainImageUrl = model.ImageUrl;
-
-            if (!string.IsNullOrEmpty(model.ImageUrl))
-            {
-                existingDto.MainImageUrl = model.ImageUrl;
-            }
-
-            await _productService.UpdateAsync(existingDto);
-            TempData["Success"] = "Product updated successfully.";
-            return RedirectToAction("MyProducts", "Profile");
-        }
-
-        // ---------------- DELETE ----------------
-        [HttpPost]
-        [Authorize(Roles = "Seller")]
-        [ValidateAntiForgeryToken]
-        [ActiveUserAuthorize]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var dto = await _productService.GetAsync(id);
-            if (dto == null) return NotFound();
-            if (dto.SellerId != GetCurrentUserId()) return Forbid();
-
-            await _productService.DeleteAsync(id);
-            TempData["Success"] = "Product deleted successfully.";
-            return RedirectToAction("MyProducts", "Profile");
-        }
-
-        // ---------------- COMMENT ----------------
-        [HttpPost]
-        [Authorize(Roles = "Buyer,Seller")]
-        [ValidateAntiForgeryToken]
-        [ActiveUserAuthorize]
-        public async Task<IActionResult> Comment(int productId, CommentViewModel model)
-        {
-            // Eğer kullanıcı adminse, yorum yapmasına izin verme
-            if (User.IsInRole("Admin"))
-            {
-                TempData["Error"] = "Admins cannot comment on products.";
-                return RedirectToAction("ProductDetail", "Home", new { id = productId });
-            }
-
-            if (!ModelState.IsValid)
-            {
-                TempData["Error"] = "Invalid comment data."; 
-                return RedirectToAction("ProductDetail", "Home", new { id = productId });
-            }
-
-            // Ürün bilgilerini al
-            var product = await _productService.GetAsync(productId);
-            if (product == null)
-            {
-                TempData["Error"] = "Product not found.";
-                return RedirectToAction("ProductDetail", "Home", new { id = productId });
-            }
-
-            
-            // Yorum için gerekli bilgileri modele ekle
-            model.UserName = User.Identity.Name;  // Oturum açmış kullanıcı adı
-            model.ProductName = product.Name;     // Ürün adı, product modelinden alınır
-
-            try
-            {
-                // ViewModel -> ProductCommentDTO
-                var commentDto = new ProductCommentDTO
-                {
-                    ProductId = productId,
-                    UserId = GetCurrentUserId(),
-                    Text = model.Text,
-                    StarCount = model.Rating,
-                    IsConfirmed = false, // Admin onayına düşer
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                await _productService.AddCommentAsync(productId, commentDto);
-                TempData["Success"] = "Comment submitted for approval.";
-
-            }
-            catch (InvalidOperationException ex)
-            {
-                // Satın almamışsa buraya düşecek
-                TempData["Error"] = ex.Message;
-            }
-            catch (Exception)
-            {
-                TempData["Error"] = "An error occurred while saving your comment.";
-            }
-            return RedirectToAction("ProductDetail", "Home", new { id = productId });
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim)) return 0; // Veya hata fırlat
+            return int.Parse(userIdClaim);
         }
 
         // ---------------- HELPERS ----------------
         private async Task PopulateCategoriesAsync()
         {
-            var categories = await _categoryService.GetAllAsync();
+            var categories = await _categoryApiService.GetAllAsync();
 
             ViewData["Categories"] = categories
                 .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name })
@@ -232,7 +54,7 @@ namespace ECommerce.Web.Mvc.Controllers
             // Sepet sayısını hala session'dan okuyoruz (Çünkü hibrit yapımızda sayıyı session güncelliyor)
             ViewBag.CartCount = HttpContext.Session.GetInt32("CartCount") ?? 0;
 
-            var categories = await _categoryService.GetAllAsync();
+            var categories = await _categoryApiService.GetAllAsync();
             ViewBag.Categories = categories.Select(c => new CategoryViewModel
             {
                 Id = c.Id,
@@ -252,7 +74,7 @@ namespace ECommerce.Web.Mvc.Controllers
                 Name = dto.Name,
                 CategoryId = dto.CategoryId,
                 Category = dto.CategoryName,
-                ImageUrl = dto.MainImageUrl ?? "/img/product/default.jpg",
+                ImageUrl = dto.MainImageUrl,
                 Price = dto.Price,
                 Rating = dto.Rating,
                 ReviewCount = dto.ReviewCount,
@@ -277,24 +99,238 @@ namespace ECommerce.Web.Mvc.Controllers
             };
         }
 
+
+        // ---------------- CREATE (GET) ----------------
+        [Authorize(Roles = "Seller")] // Sadece satıcılar girebilir
+        [ActiveUserAuthorize]
+        public async Task<IActionResult> Create()
+        {
+            await PopulateCategoriesAsync();
+            return View(new ProductCreateViewModel());
+        }
+
+        // ---------------- CREATE (POST) ----------------
+        [HttpPost]
+        [Authorize(Roles = "Seller")]
+        [ValidateAntiForgeryToken]
+        [ActiveUserAuthorize]
+        public async Task<IActionResult> Create(ProductCreateViewModel model)
+        {
+            // 1. Resim Yükleme (Burada sorun yok, dosya ismini alıyoruz)
+            string uploadedFileName = null;
+            if (model.ImageFile != null && model.ImageFile.Length > 0)
+            {
+                uploadedFileName = await _fileApiService.UploadFileAsync(model.ImageFile);
+            }
+
+            // 2. ModelState'den resim hatasını temizle (Zaten manuel hallediyoruz)
+            ModelState.Remove("ImageUrl");
+           
+            if (!ModelState.IsValid)
+            {
+                await PopulateCategoriesAsync();
+                return View(model);
+            }
+
+            // ViewModel -> DTO
+            var dto = new ProductDTO
+            {
+                Name = model.Name,
+                CategoryId = model.CategoryId,
+                Price = model.Price,
+                OldPrice = model.OldPrice,
+                StockAmount = model.StockAmount,
+                Details = model.Details,
+                CreatedAt = DateTime.Now,
+                Enabled = true,
+                SellerId = GetCurrentUserId(),
+                MainImageUrl = !string.IsNullOrEmpty(uploadedFileName) ? uploadedFileName : model.ImageUrl,
+                
+            };
+
+            await _productApiService.AddAsync(dto);
+            TempData["Success"] = "Product added successfully.";
+            return RedirectToAction("MyProducts", "Profile");
+        }
+        // ---------------- EDIT (GET) ----------------
+        [Authorize(Roles = "Seller")]
+        [ActiveUserAuthorize]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var dto = await _productApiService.GetAsync(id);
+            if (dto == null) return NotFound();
+
+            // Güvenlik: Başkasının ürününü düzenleyemez
+            if (dto.SellerId != GetCurrentUserId())
+            {
+                TempData["Error"] = "You are not authorized to edit this product.";
+                return RedirectToAction("MyProducts", "Profile");
+            }
+
+            await PopulateCategoriesAsync();
+            return View(MapToEditViewModel(dto)); // DTO alan sürüme gidiyor
+
+           
+        }
+
+        // ---------------- EDIT (POST) ----------------
+        [HttpPost]
+        [Authorize(Roles = "Seller")]
+        [ValidateAntiForgeryToken]
+        [ActiveUserAuthorize]
+        public async Task<IActionResult> Edit(ProductEditViewModel model)
+        {
+            var existingDto = await _productApiService.GetAsync(model.Id);
+            if (existingDto == null) return NotFound();
+            if (existingDto.SellerId != GetCurrentUserId()) return Forbid();
+
+            if (!ModelState.IsValid)
+            {
+                await PopulateCategoriesAsync();
+                return View(model);
+            }
+
+            // 1. RESİM YÜKLEME 
+            if (model.ImageFile != null && model.ImageFile.Length > 0)
+            {
+                var uploadedFileName = await _fileApiService.UploadFileAsync(model.ImageFile);
+                if (!string.IsNullOrEmpty(uploadedFileName))
+                {
+                    existingDto.MainImageUrl = uploadedFileName;
+                    model.ImageUrl = uploadedFileName;
+                }
+            }
+            else
+            {
+                // Yeni resim yoksa, gizli inputtaki (eski) ismi koru
+                existingDto.MainImageUrl = model.ImageUrl;
+            }
+
+
+            // ViewModel -> DTO
+            existingDto.Name = model.Name;
+            existingDto.Price = model.Price;
+            existingDto.OldPrice = model.OldPrice;
+            existingDto.CategoryId = model.CategoryId;
+            existingDto.StockAmount = model.StockAmount;
+            existingDto.Details = model.Details;
+           
+            if (existingDto.Comments != null)
+            {
+                foreach (var comment in existingDto.Comments)
+                {
+                    comment.ProductName = existingDto.Name;
+                }
+            }
+
+            await _productApiService.UpdateAsync(existingDto);
+            TempData["Success"] = "Product updated successfully.";
+            return RedirectToAction("MyProducts", "Profile");
+        }
+
+        // ---------------- DELETE ----------------
+        [HttpPost]
+        [Authorize(Roles = "Seller")]
+        [ValidateAntiForgeryToken]
+        [ActiveUserAuthorize]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var dto = await _productApiService.GetAsync(id);
+            if (dto == null) return NotFound();
+            if (dto.SellerId != GetCurrentUserId()) return Forbid();
+
+            await _productApiService.DeleteAsync(id);
+            TempData["Success"] = "Product deleted successfully.";
+            return RedirectToAction("MyProducts", "Profile");
+        }
+
+        // ---------------- COMMENT ----------------
+        [HttpPost]
+        [Authorize(Roles = "Buyer,Seller")]
+        [ValidateAntiForgeryToken]
+        [ActiveUserAuthorize]
+        public async Task<IActionResult> Comment(int productId, CommentViewModel model)
+        {
+            // NOT: Şu anki yetkilendirme filtreleri nedeniyle Admin ve SystemAdmin zaten mağazaya giriş yapamıyor.
+            // Ancak gelecekte giriş izni verilirse, güvenli bir geçiş yapılmasını sağlar.-->şimdilik dursun test edilebilir ileride
+            // Eğer kullanıcı adminse, yorum yapmasına izin verme
+            if (User.IsInRole("Admin") || User.IsInRole("SystemAdmin"))
+            {
+                TempData["Error"] = "Admins cannot comment on products.";
+                return RedirectToAction("ProductDetail", "Home", new { id = productId });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "Invalid comment data."; 
+                return RedirectToAction("ProductDetail", "Home", new { id = productId });
+            }
+
+            // Ürün bilgilerini al
+            var product = await _productApiService.GetAsync(productId);
+            if (product == null)
+            {
+                TempData["Error"] = "Product not found.";
+                return RedirectToAction("ProductDetail", "Home", new { id = productId });
+            }
+
+            
+            // Yorum için gerekli bilgileri modele ekle
+            model.UserName = User.Identity.Name;  // Oturum açmış kullanıcı adı
+            model.ProductName = product.Name;     // Ürün adı, product modelinden alınır
+
+            try
+            {
+                // ViewModel -> ProductCommentDTO
+                var commentDto = new ProductCommentDTO
+                {
+                    ProductId = productId,
+                    UserId = GetCurrentUserId(),
+                    Text = model.Text,
+                    StarCount = model.Rating,
+                    IsConfirmed = false, // Admin onayına düşer
+                    CreatedAt = DateTime.UtcNow,
+
+                    UserName = User.Identity.Name ?? "User",
+                    ProductName = product.Name ?? "Product"
+                };
+
+                await _productApiService.AddCommentAsync(productId, commentDto);
+                TempData["Success"] = "Comment submitted for approval.";
+
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Satın almamışsa buraya düşecek
+                TempData["Error"] = ex.Message;
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Comment failed: {ex.Message}";
+            }
+            return RedirectToAction("ProductDetail", "Home", new { id = productId });
+        }
+
+       
+
         // ---------------- TOGGLE STATUS ----------------
         [HttpPost]
-        [Authorize(Roles = "Seller,Admin")]
+        [Authorize(Roles = "Seller,Admin, SystemAdmin")]
         [ValidateAntiForgeryToken]
         [ActiveUserAuthorize]
         public async Task<IActionResult> ToggleStatus(int id)
         {
-            var dto = await _productService.GetAsync(id);
+            var dto = await _productApiService.GetAsync(id);
             if (dto == null) return NotFound();
 
             // Güvenlik: Sadece ürünün sahibi durum değiştirebilir (ve Admin)
-            if (!User.IsInRole("Admin") && dto.SellerId != GetCurrentUserId())
+            if (!User.IsInRole("Admin") && !User.IsInRole("SystemAdmin") && dto.SellerId != GetCurrentUserId())
             {
                 TempData["Error"] = "You are not authorized to change this status.";
                 return RedirectToAction("MyProducts", "Profile");
             }
 
-            await _productService.ToggleStatusAsync(id);
+            await _productApiService.ToggleStatusAsync(id);
             TempData["Success"] = "Product status updated successfully.";
             return RedirectToAction("MyProducts", "Profile");
         }
@@ -308,7 +344,7 @@ namespace ECommerce.Web.Mvc.Controllers
             await SetCommonViewDataAsync();
 
             // Servis artık List<ProductDTO> dönüyor
-            var productDtos = await _productService.SearchProductsAsync(query, category ?? "", rating);
+            var productDtos = await _productApiService.SearchProductsAsync(query, category ?? "", rating);
 
             var model = new ProductListingViewModel
             {

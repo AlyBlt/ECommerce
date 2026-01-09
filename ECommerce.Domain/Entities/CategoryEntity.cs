@@ -13,6 +13,8 @@ namespace ECommerce.Domain.Entities
         [MinLength(2)]
         public string IconCssClass { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
+        // Yeni eklenen alan
+        public string? ImageUrl { get; set; }
 
         // Navigation
         public ICollection<ProductEntity>? Products { get; set; }

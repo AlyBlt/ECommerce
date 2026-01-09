@@ -1,12 +1,8 @@
 ﻿using ECommerce.Application.Interfaces.Services;
-using ECommerce.Application.Services;
 using ECommerce.Web.Mvc.Helpers;
-using ECommerce.Web.Mvc.Models.Cart;
 using ECommerce.Web.Mvc.Models.Favorite;
-using ECommerce.Web.MVC.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
 using System.Security.Claims;
 
 namespace ECommerce.Web.Mvc.Controllers
@@ -16,36 +12,29 @@ namespace ECommerce.Web.Mvc.Controllers
     [AllowAnonymous]
     public class FavoritesController : Controller
     {
-        private readonly IFavoriteService _favoriteService;
-        private readonly ICartService _cartService;
-        private readonly IProductService _productService;
+        private readonly IFavoriteService _favoriteApiService;
+        private readonly ICartService _cartApiService;
+        private readonly IProductService _productApiService;
 
-        public FavoritesController(IFavoriteService favoriteService, ICartService cartService, IProductService productService)
+        public FavoritesController(IFavoriteService favoriteApiService, ICartService cartApiService, IProductService productApiService)
         {
-            _favoriteService = favoriteService;
-            _cartService = cartService;
-            _productService = productService;
+            _favoriteApiService = favoriteApiService;
+            _cartApiService = cartApiService;
+            _productApiService = productApiService;
         }
 
         // ---------------- CURRENT USER ----------------
         private int? GetCurrentUserId()
         {
-            if (User.Identity?.IsAuthenticated != true)
-                return null;
-
+            if (User.Identity?.IsAuthenticated != true) return null;
             var claim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
             return claim != null ? int.Parse(claim.Value) : null;
         }
 
-        //-------CANMODIFY HELPER-----------------
         private bool CanModifyFavorites()
         {
-            // Admin favoriyi göremez, müdahale edemez
-            if (User.IsInRole("Admin"))
-                return false;
-
-            // Diğer kullanıcılar (Buyer/Seller ya da anonim kullanıcılar) müdahale edebilir
-            return true;
+            // Admin ve SystemAdmin rollerinden herhangi birine sahipse false döner
+            return !(User.IsInRole("Admin") || User.IsInRole("SystemAdmin"));
         }
 
         // --- INDEX ---
@@ -56,7 +45,7 @@ namespace ECommerce.Web.Mvc.Controllers
 
             if (userId.HasValue)
             {
-                var dbFavs = await _favoriteService.GetByUserAsync(userId.Value);
+                var dbFavs = await _favoriteApiService.GetByUserAsync(userId.Value);
                 favorites = dbFavs.Select(f => new FavoriteItemViewModel
                 {
                     ProductId = f.ProductId,
@@ -91,30 +80,24 @@ namespace ECommerce.Web.Mvc.Controllers
 
             if (userId.HasValue)
             {
-                // Adminse favorileri sıfırla
-                if (User.IsInRole("Admin"))
-                {
-                    SessionHelper.ClearFavorites(HttpContext);  // Adminse session favorites temizle
-                }
-                else
-                {
-                    await _favoriteService.AddAsync(userId.Value, productId);
-                    var currentFavs = await _favoriteService.GetByUserAsync(userId.Value);
-                    favoritesCount = currentFavs.Count();
-                }
+
+                await _favoriteApiService.AddAsync(userId.Value, productId);
+                var currentFavs = await _favoriteApiService.GetByUserAsync(userId.Value);
+                favoritesCount = currentFavs.Count();
+            
             }
             else
             {
                 var favorites = SessionHelper.GetFavorites(HttpContext) ?? new List<FavoriteItemViewModel>();
                 if (!favorites.Any(f => f.ProductId == productId))
                 {
-                    var product = await _productService.GetAsync(productId);
+                    var product = await _productApiService.GetAsync(productId);
                     favorites.Add(new FavoriteItemViewModel
                     {
                         ProductId = productId,
                         Name = product?.Name ?? "Unknown Product",
                         Price = product?.Price ?? 0,
-                        ImageUrl = product.MainImageUrl ?? "/img/product/default.jpg"
+                        ImageUrl = product?.MainImageUrl
                     });
                 }
                 SessionHelper.SaveFavorites(HttpContext, favorites);
@@ -140,17 +123,11 @@ namespace ECommerce.Web.Mvc.Controllers
 
             if (userId.HasValue)
             {
-                // Adminse favorileri sıfırla
-                if (User.IsInRole("Admin"))
-                {
-                    SessionHelper.ClearFavorites(HttpContext);  // Adminse session favorites temizle
-                }
-                else
-                {
-                    await _favoriteService.RemoveAsync(userId.Value, productId);
-                    var currentFavs = await _favoriteService.GetByUserAsync(userId.Value);
-                    HttpContext.Session.SetInt32("FavoritesCount", currentFavs.Count());
-                }
+
+                await _favoriteApiService.RemoveAsync(userId.Value, productId);
+                var currentFavs = await _favoriteApiService.GetByUserAsync(userId.Value);
+                HttpContext.Session.SetInt32("FavoritesCount", currentFavs.Count());
+                
             }
             else
             {
@@ -185,25 +162,27 @@ namespace ECommerce.Web.Mvc.Controllers
 
             if (userId.HasValue)
             {
-                // Adminse favorileri sıfırla
-                if (User.IsInRole("Admin"))
+                // NOT: Şu anki yetkilendirme filtreleri nedeniyle Admin ve SystemAdmin mağazaya giriş yapamıyor.
+                // Ancak gelecekte giriş izni verilirse, güvenli bir geçiş yapılmasını sağlar.-->şimdilik dursun
+                // Admin veya SystemAdmin ise favorileri sıfırla
+                if (User.IsInRole("Admin") || User.IsInRole("SystemAdmin"))
                 {
-                    SessionHelper.ClearFavorites(HttpContext);  // Adminse session favorites temizle
+                    SessionHelper.ClearFavorites(HttpContext);  // Session'daki favori listesini temizle
                 }
                 else
                 {
-                    var favorites = await _favoriteService.GetByUserAsync(userId.Value);
+                    var favorites = await _favoriteApiService.GetByUserAsync(userId.Value);
                     foreach (var fav in favorites)
                     {
-                        await _cartService.AddToCartAsync(userId.Value, new ECommerce.Application.DTOs.Cart.CartAddDTO
+                        await _cartApiService.AddToCartAsync(userId.Value, new ECommerce.Application.DTOs.Cart.CartAddDTO
                         {
                             ProductId = fav.ProductId,
                             Quantity = 1
                         });
                     }
-                    await _favoriteService.ClearAsync(userId.Value);
+                    await _favoriteApiService.ClearAsync(userId.Value);
 
-                    var cartItems = await _cartService.GetCartItemsAsync(userId.Value);
+                    var cartItems = await _cartApiService.GetCartItemsAsync(userId.Value);
                     totalCount = cartItems.Sum(x => x.Quantity);
                     totalPrice = cartItems.Sum(x => x.Quantity * x.Price);
                 }
@@ -250,7 +229,7 @@ namespace ECommerce.Web.Mvc.Controllers
 
             if (userId.HasValue)
             {
-                await _favoriteService.ClearAsync(userId.Value);
+                await _favoriteApiService.ClearAsync(userId.Value);
             }
             else
             {

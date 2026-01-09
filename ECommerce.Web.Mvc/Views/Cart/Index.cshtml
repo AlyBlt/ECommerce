@@ -1,143 +1,136 @@
 ﻿@model ECommerce.Web.Mvc.Models.Cart.CartViewModel
 @{
     ViewData["Title"] = "My Cart";
-    var isAdmin = User.IsInRole("Admin");
-    var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
-    var isBuyerOrSeller = User.IsInRole("Buyer") || User.IsInRole("Seller");
+    var isAdmin = User.IsInRole("Admin") || User.IsInRole("SystemAdmin");
 }
+
 @if (isAdmin)
 {
-    <div class="alert alert-danger">
-        You are not authorized to view or modify the cart. Please proceed to the admin dashboard.
+    <div class="container mt-5">
+        <div class="alert alert-danger shadow-sm">
+            <i class="fa fa-exclamation-triangle"></i> You are not authorized to view or modify the cart. Please proceed to the admin dashboard.
+        </div>
     </div>
 }
 else
 {
-
-<section class="shoping-cart spad">
-    <div class="container">
-
-        <h2 class="mb-4">My Cart</h2>
-
-        <!-- Success Message -->
-        @if (TempData["Success"] != null)
-        {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                @TempData["Success"]
-                <button type="button" class="close" data-dismiss="alert">
-                    <span>&times;</span>
-                </button>
+    <section class="shoping-cart spad">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="m-0">My Cart</h2>
+                @if (Model.Items.Any())
+                {
+                    <form asp-controller="Cart" asp-action="Clear" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to clear your cart?')">
+                            <i class="fa fa-trash"></i> Clear Cart
+                        </button>
+                    </form>
+                }
             </div>
-        }
 
-            @if (TempData["Error"] != null)
+            @if (TempData["Success"] != null)
             {
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    @TempData["Error"]
-                    <button type="button" class="close" data-dismiss="alert">
-                        <span>&times;</span>
-                    </button>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Success"]
+                    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
                 </div>
             }
 
-
-            <!-- Clear Cart Button -->
-        <form asp-controller="Cart" asp-action="Clear" method="post" class="mb-4">
-            <button type="submit" class="primary-btn">Clear Cart</button>
-        </form>
-        @if (Model.Items.Any())
-        {
-            <div class="shoping__cart__table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="shoping__product">Product</th>
-                            <th>Price</th>
-                            <th>Quantity</th>
-                            <th>Total</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        @foreach (var item in Model.Items)
-                        {
+            @if (Model.Items.Any())
+            {
+                <div class="shoping__cart__table">
+                    <table>
+                        <thead>
                             <tr>
-                                <td class="shoping__cart__item d-flex align-items-center">
-                                    <img src="@(!string.IsNullOrEmpty(item.ImageUrl) ? Url.Content(item.ImageUrl) : Url.Content("~/img/product/default.jpg"))"
-                                         alt="@item.Name"
-                                         class="me-3"
-                                         style="width:70px; height:70px; object-fit:cover;" />
-                                    <h5 class="m-0">@item.Name</h5>
-                                </td>
-
-                                <td class="shoping__cart__price">
-                                    $ @item.Price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
-                                </td>
-
-                                <td class="shoping__cart__quantity">
-                                    <form asp-controller="Cart" asp-action="Edit" method="post" class="d-flex">
-                                            @Html.AntiForgeryToken()
-                                        <input type="hidden" name="productId" value="@item.ProductId" />
-                                        <input type="number" name="quantity" value="@item.Quantity"
-                                               class="form-control" style="width:80px;" min="1" />
-
-                                        <button type="submit" class="btn btn-warning btn-sm ms-2">Update</button>
-                                    </form>
-                                </td>
-
-                                <td class="shoping__cart__total">$ @item.TotalPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</td>
-
-                                <td class="shoping__cart__item__close">
-                                    <form asp-controller="Cart" asp-action="Edit" method="post">
-                                            @Html.AntiForgeryToken()
-                                        <input type="hidden" name="productId" value="@item.ProductId" />
-                                        <input type="hidden" name="quantity" value="0" />
-                                        <button type="submit" class="btn btn-danger btn-sm">Remove</button>
-                                    </form>
-                                </td>
+                                <th class="shoping__product">Product</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Total</th>
+                                <th></th>
                             </tr>
-                        }
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td class="shoping__cart__item">
+                                        <div class="d-flex align-items-center">
+                                            @* --- CUSTOM TAGHELPER KULLANIMI --- *@
+                                            <my-img file-name="@item.ImageUrl"
+                                                    alt="@item.Name"
+                                                    style="width:80px; height:80px; object-fit:cover;"
+                                                    class="rounded shadow-sm me-3" />
+                                            <h5>@item.Name</h5>
+                                        </div>
+                                    </td>
+                                    <td class="shoping__cart__price">
+                                        $ @item.Price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
+                                    </td>
+                                    <td class="shoping__cart__quantity">
+                                        <form asp-controller="Cart" asp-action="Edit" method="post" class="d-flex justify-content-center align-items-center">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="productId" value="@item.ProductId" />
+                                            <input type="number" name="quantity" value="@item.Quantity"
+                                                   class="form-control form-control-sm text-center" style="width:60px;" min="1" />
+                                            <button type="submit" class="btn btn-link text-warning p-0 ms-2" title="Update">
+                                                <i class="fa fa-refresh"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                    <td class="shoping__cart__total">
+                                        $ @item.TotalPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
+                                    </td>
+                                    <td class="shoping__cart__item__close">
+                                        <form asp-controller="Cart" asp-action="Edit" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="productId" value="@item.ProductId" />
+                                            <input type="hidden" name="quantity" value="0" />
+                                            <button type="submit" class="btn btn-sm text-danger" title="Remove">
+                                                <span class="icon_close"></span>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
 
-                        <tr>
-                            <td colspan="3" class="shoping__cart__total"><strong>Total</strong></td>
-                            <td class="shoping__cart__total"><strong>@Model.TotalPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) $</strong></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <!-- BUTONLAR (Back + Continue Shopping + Checkout) -->
-            <div class="shoping__cart__btns mt-4 d-flex justify-content-between">
-
-                <!-- BACK TO HOME -->
-                <a href="@Url.Action("Index", "Home")" class="primary-btn">
-                    ← Back to Home
-                </a>
-
-                <!-- CONTINUE SHOPPING -->
-                <a href="@Url.Action("Listing", "Home")" class="primary-btn">
-                    Continue Shopping
-                </a>
-
-                <!-- PROCEED TO CHECKOUT -->
-                <a href="@Url.Action("Create", "Order")" class="primary-btn cart-btn-right">
-                    Proceed to Checkout →
-                </a>
-
-            </div>
-
-        }
-        else
-        {
-            <p class="text-muted">Your cart is empty.</p>
-
-            <!-- Sepet boşsa geri dön butonu -->
-            <a href="@Url.Action("Index", "Home")" class="primary-btn mt-3">
-                ← Back to Home
-            </a>
-        }
-
-    </div>
-</section>
+                <div class="row mt-4">
+                    <div class="col-lg-6">
+                        <div class="shoping__cart__btns">
+                            <a href="@Url.Action("Listing", "Home")" class="primary-btn cart-btn text-center"
+                               style="width: 220px; padding: 12px 15px; font-size: 13px; display: inline-block;">CONTINUE SHOPPING</a>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 offset-lg-3">
+                        <div class="shoping__checkout mt-0 float-right" style="width: 260px; padding: 25px;">
+                            <h5 class="mb-2">Cart Total</h5>
+                            <ul class="mb-2">
+                                <li style="font-size: 16px;">Total <span style="font-size: 16px;">$ @Model.TotalPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</span></li>
+                            </ul>
+                            @if (User.Identity.IsAuthenticated)
+                            {
+                                <a href="@Url.Action("Create", "Order")" class="primary-btn text-center d-block" style="padding: 10px 15px; font-size: 13px;">PROCEED TO CHECKOUT</a>
+                            }
+                            else
+                            {
+                                <a href="/Account/Login?returnUrl=/Order/Create" class="primary-btn text-center d-block" style="background-color: #6c757d; padding: 10px 15px; font-size: 13px;">LOGIN TO CHECKOUT</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fa fa-shopping-cart fa-4x text-light mb-3"></i>
+                    <p class="text-muted">Your cart is empty.</p>
+                    <a href="@Url.Action("Index", "Home")" class="primary-btn mt-3">START SHOPPING</a>
+                </div>
+            }
+        </div>
+    </section>
 }
 

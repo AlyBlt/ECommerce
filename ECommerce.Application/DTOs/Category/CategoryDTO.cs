@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace ECommerce.Application.DTOs.Category
 {
@@ -15,5 +11,7 @@ namespace ECommerce.Application.DTOs.Category
 
         // Opsiyonel: Kategoriye ait kaç ürün olduğunu göstermek istersen
         public int ProductCount { get; set; }
+        // Yeni eklenen alan
+        public string? ImageUrl { get; set; }
     }
 }

@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using System.Collections.Generic;
-using ECommerce.Web.Mvc.Models.Favorite;
+﻿using ECommerce.Web.Mvc.Models.Favorite;
 using ECommerce.Web.Mvc.Models.Cart;
 
 namespace ECommerce.Web.Mvc.Helpers

@@ -2,8 +2,7 @@
 using ECommerce.Application.Interfaces.Services;
 using ECommerce.Domain.Entities;
 using ECommerce.Application.DTOs.ProductComment;
-using System.Collections.Generic;
-using System.Linq;
+
 
 namespace ECommerce.Application.Services
 {
@@ -94,9 +93,9 @@ namespace ECommerce.Application.Services
             {
                 Id = entity.Id,
                 ProductId = entity.ProductId,
-                ProductName = entity.Product?.Name ?? "Bilinmeyen Ürün",
+                ProductName = entity.Product?.Name ?? "Unknown Product",
                 UserId = entity.UserId,
-                UserName = entity.User != null ? $"{entity.User.FirstName} {entity.User.LastName}" : "Anonim",
+                UserName = entity.User != null ? $"{entity.User.FirstName} {entity.User.LastName}" : "Anonymous",
                 Text = entity.Text,
                 StarCount = entity.StarCount,
                 IsConfirmed = entity.IsConfirmed,

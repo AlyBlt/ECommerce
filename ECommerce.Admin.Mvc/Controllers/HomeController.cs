@@ -1,37 +1,36 @@
-﻿using ECommerce.Admin.Mvc.Filters;
+﻿using ECommerce.Application.Filters;
 using ECommerce.Admin.Mvc.Models.Home;
 using ECommerce.Application.Interfaces.Services;
-using ECommerce.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerce.Admin.MVC.Controllers
 {
     [Route("admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "AdminPanelAccess")]
     [ActiveUserAuthorize]
     public class HomeController : Controller
     {
-        private readonly IDashboardService _dashboardService;
-       
-        public HomeController(IDashboardService dashboardService)
+        // Artik doğrudan DashboardApiService somut sınıfını enjekte ediyoruz
+        private readonly IDashboardService _dashboardApiService;
+
+        public HomeController(IDashboardService dashboardApiService)
         {
-            _dashboardService = dashboardService;
+            _dashboardApiService = dashboardApiService;
         }
 
         [HttpGet("")]
         public async Task<IActionResult> Index()
         {
-            // Buraya erişiyorsa:
-            // Kullanıcı login
-            // Role = Admin (Authorize attribute bunu kontrol ediyor)
+            // Authenticated kontrolü zaten [Authorize] ile yapılıyor, 
+            // ama ekstra güvenlik için kalabilir-istersek silinebilir.
             if (User.Identity?.IsAuthenticated == false)
             {
                 return RedirectToAction("Login", "Auth");
             }
 
-            // Dashboard verilerini al
-            var statsDto = await _dashboardService.GetDashboardStatsAsync();
+            // DashboardApiService üzerinden API'deki "api/dashboard/stats" endpointine gider
+            var statsDto = await _dashboardApiService.GetDashboardStatsAsync();
 
             // DTO -> ViewModel Mapping
             var vm = new DashboardViewModel

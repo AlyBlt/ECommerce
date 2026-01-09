@@ -1,27 +1,25 @@
 using ECommerce.Application.DTOs.Product;
 using ECommerce.Application.Interfaces.Services;
-using ECommerce.Domain.Entities;
 using ECommerce.Web.Mvc.Models.Category;
 using ECommerce.Web.Mvc.Models.Comment;
 using ECommerce.Web.Mvc.Models.Home;
 using ECommerce.Web.Mvc.Models.Product;
-using ECommerce.Web.MVC.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
 using System.Security.Claims;
 
 namespace ECommerce.Web.Mvc.Controllers
 {
+    [AllowAnonymous]
     public class HomeController : Controller
     {
-        private readonly IProductService _productService;
-        private readonly ICategoryService _categoryService;
+        private readonly IProductService _productApiService;
+        private readonly ICategoryService _categoryApiService;
 
-        public HomeController(IProductService productService, ICategoryService categoryService)
+        public HomeController(IProductService productApiService, ICategoryService categoryApiService)
         {
-            _productService = productService;
-            _categoryService = categoryService;
+            _productApiService = productApiService;
+            _categoryApiService = categoryApiService;
         }
 
         // --- COMMON VIEW DATA (Cookie Auth + Session) ---
@@ -34,7 +32,7 @@ namespace ECommerce.Web.Mvc.Controllers
             // Sepet sayýsýný hala session'dan okuyoruz (Çünkü hibrit yapýmýzda sayýyý session güncelliyor)
             ViewBag.CartCount = HttpContext.Session.GetInt32("CartCount") ?? 0;
 
-            var categories = await _categoryService.GetAllAsync();
+            var categories = await _categoryApiService.GetAllAsync();
             ViewBag.Categories = categories.Select(c => new CategoryViewModel
             {
                 Id = c.Id,
@@ -51,22 +49,25 @@ namespace ECommerce.Web.Mvc.Controllers
             await SetCommonViewDataAsync();
 
             // Servisler artýk DTO dönüyor
-            var popular = await _productService.GetFeaturedProductsAsync();
-            var discounted = await _productService.GetDiscountedProductsAsync();
-            var newArrivals = await _productService.GetNewArrivalProductsAsync();
-            var allProducts = await _productService.GetAllAsync();
+            // Task.WhenAll ile paralel istek atarak performansý optimize ediyoruz
+            var popular = _productApiService.GetFeaturedProductsAsync();
+            var discounted = _productApiService.GetDiscountedProductsAsync();
+            var newArrivals = _productApiService.GetNewArrivalProductsAsync();
+            var allProducts = _productApiService.GetAllAsync();
+
+            await Task.WhenAll(popular, discounted, newArrivals, allProducts);
 
             var model = new HomePageViewModel
             {
                 Featured = new FeaturedProductsViewModel
                 {
-                    PopularProducts = popular.Select(MapDtoToListingViewModel).ToList(),
-                    DiscountedProducts = discounted.Select(MapDtoToListingViewModel).ToList(),
-                    NewArrivalProducts = newArrivals.Select(MapDtoToListingViewModel).ToList()
+                    PopularProducts = popular.Result.Select(MapDtoToListingViewModel).ToList(),
+                    DiscountedProducts = discounted.Result.Select(MapDtoToListingViewModel).ToList(),
+                    NewArrivalProducts = newArrivals.Result.Select(MapDtoToListingViewModel).ToList()
                 },
                 Categories = ViewBag.Categories,
-                Products = allProducts.OrderByDescending(p => p.CreatedAt).Take(12).Select(MapDtoToListingViewModel).ToList(),
-                FeaturedProducts = allProducts.Where(p => p.IsFeatured).Select(MapDtoToListingViewModel).ToList()
+                Products = allProducts.Result.OrderByDescending(p => p.CreatedAt).Take(12).Select(MapDtoToListingViewModel).ToList(),
+                FeaturedProducts = allProducts.Result.Where(p => p.IsFeatured).Select(MapDtoToListingViewModel).ToList()
             };
 
             return View(model);
@@ -83,8 +84,8 @@ namespace ECommerce.Web.Mvc.Controllers
             filter = string.IsNullOrEmpty(filter) ? "all-products" : filter.ToLower();
 
             // Tüm ürünleri asenkron çekip Queryable'a çeviriyoruz (veya servise filtreli talep atýlabilir)
-            var productsData = await _productService.GetActiveProductsAsync();
-            var query = productsData.AsQueryable();
+            var productsData = await _productApiService.GetActiveProductsAsync();
+            var query = productsData.AsEnumerable(); 
            // var query = _productService.GetActiveQuery(); // IQueryable dönen metot--denenebilir
 
             if (!string.IsNullOrEmpty(category))
@@ -124,7 +125,7 @@ namespace ECommerce.Web.Mvc.Controllers
             
             await SetCommonViewDataAsync();
 
-            var productDto = await _productService.GetAsync(id);
+            var productDto = await _productApiService.GetAsync(id);
             if (productDto == null) return NotFound();
 
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -132,8 +133,8 @@ namespace ECommerce.Web.Mvc.Controllers
 
             if (!string.IsNullOrEmpty(userIdClaim))
             {
-                // Artýk servis üzerinden tertemiz eriþiyoruz
-                canComment = await _productService.HasUserPurchasedProductAsync(int.Parse(userIdClaim), id);
+                
+                canComment = await _productApiService.HasUserPurchasedProductAsync(int.Parse(userIdClaim), id);
             }
 
             ViewBag.CanComment = canComment;
@@ -146,7 +147,7 @@ namespace ECommerce.Web.Mvc.Controllers
                 Category = productDto.CategoryName ?? "",
                 Price = productDto.Price,
                 OldPrice = productDto.OldPrice > productDto.Price ? productDto.OldPrice : null,
-                ImageUrl = productDto.MainImageUrl ?? "/img/product/default.jpg",
+                ImageUrl = productDto.MainImageUrl,
                 Description = productDto.Details ?? "",
                 Availability = productDto.StockAmount > 0 ? "In Stock" : "Out of Stock",
                 Enabled = productDto.Enabled,
@@ -162,7 +163,7 @@ namespace ECommerce.Web.Mvc.Controllers
                     Rating = c.StarCount,
                     IsApproved = c.IsConfirmed
                 }).ToList() ?? new List<CommentViewModel>(),
-                RelatedProducts = (await _productService.GetRelatedProductsAsync(productDto.CategoryId, productDto.Id))
+                RelatedProducts = (await _productApiService.GetRelatedProductsAsync(productDto.CategoryId, productDto.Id))
                     .Select(MapDtoToProductListViewModel)
                     .ToList()
             };
@@ -191,7 +192,7 @@ namespace ECommerce.Web.Mvc.Controllers
                 Category = dto.CategoryName,
                 Price = dto.Price,
                 OldPrice = dto.OldPrice,
-                ImageUrl = dto.MainImageUrl ?? "/img/product/default.jpg",
+                ImageUrl = dto.MainImageUrl,
                 Rating = dto.Rating,
                 ReviewCount = dto.ReviewCount,
                 CreatedAt = dto.CreatedAt
@@ -206,7 +207,7 @@ namespace ECommerce.Web.Mvc.Controllers
                 Name = dto.Name,
                 Price = dto.Price,
                 OldPrice = dto.OldPrice > dto.Price ? dto.OldPrice : null,
-                ImageUrl = dto.MainImageUrl ?? "/img/product/default.jpg",
+                ImageUrl = dto.MainImageUrl,
                 Rating = (byte?)dto.Rating,
                 ReviewCount = dto.ReviewCount,
                 IsActive = dto.Enabled
@@ -222,9 +223,9 @@ namespace ECommerce.Web.Mvc.Controllers
             await SetCommonViewDataAsync();
 
             // Tüm görevleri ayný anda baþlatarak bekleme süresini azaltabiliriz (Task.WhenAll opsiyoneldir)
-            var popularTask = _productService.GetFeaturedProductsAsync();
-            var discountedTask = _productService.GetDiscountedProductsAsync();
-            var arrivalsTask = _productService.GetNewArrivalProductsAsync();
+            var popularTask = _productApiService.GetFeaturedProductsAsync();
+            var discountedTask = _productApiService.GetDiscountedProductsAsync();
+            var arrivalsTask = _productApiService.GetNewArrivalProductsAsync();
 
             await Task.WhenAll(popularTask, discountedTask, arrivalsTask);
 

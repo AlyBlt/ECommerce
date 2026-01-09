@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Edit Product";
 }
+
 @if (TempData["Error"] != null)
 {
     <div class="alert alert-danger">@TempData["Error"]</div>
@@ -10,6 +11,7 @@
 <section class="checkout profile-section">
     <div class="container">
         <div class="row">
+
             <!-- LEFT MENU -->
             <div class="col-lg-4 col-md-4">
                 <div class="checkout__order profile-sidebar">
@@ -27,8 +29,7 @@
             <div class="col-lg-8 col-md-8">
                 <div class="checkout__form profile-content">
                     <h4 class="mb-4">Edit Product</h4>
-
-                    <form asp-action="Edit" method="post">
+                    <form asp-action="Edit" method="post" enctype="multipart/form-data">
                         @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="Id" />
 
@@ -48,13 +49,23 @@
 
                         <div class="form-group mb-3">
                             <label>Price<span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-light text-muted">$</span>
+                                </div>
                             <input type="number" class="form-control" asp-for="Price" min="0" step="0.01" required />
                             @Html.ValidationMessageFor(m => m.Price, "", new { @class = "text-danger" })
+                        </div>
                         </div>
 
                         <div class="form-group mb-3">
                             <label>Old Price</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-light text-muted">$</span>
+                                </div>
                             <input type="number" class="form-control" asp-for="OldPrice" min="0" step="0.01" />
+                        </div>
                         </div>
 
                         <div class="form-group mb-3">
@@ -70,11 +81,23 @@
                         </div>
 
                         <div class="form-group mb-3">
-                            <label>Image URL<span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" asp-for="ImageUrl" required />
+                            <label>Current Product Image</label>
+                            <div class="mb-2">
+                                @* TagHelper burada *@
+                                <my-img file-name="@Model.ImageUrl"
+                                        id="productPreview"
+                                        class="img-thumbnail"
+                                        style="max-width: 200px; display: block;" />
+                            </div>
+                            <label>Upload New Image</label>
+                            <div class="custom-file" style="overflow: hidden;">
+                                <input type="file" name="ImageFile" class="custom-file-input" id="customFile" accept="image/*">
+                                <label class="custom-file-label" for="customFile">Choose file...</label>
+                            </div>
+                            @* Gizli alanda mevcut resim adını tutuyoruz ki yeni resim seçilmezse eskisini kaybetmeyelim *@
+                            <input type="hidden" asp-for="ImageUrl" />
                             @Html.ValidationMessageFor(m => m.ImageUrl, "", new { @class = "text-danger" })
                         </div>
-
                         <button type="submit" class="site-btn">Save Changes</button>
                     </form>
                 </div>
@@ -83,9 +106,34 @@
     </div>
 </section>
 
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('customFile').addEventListener('change', function (e) {
+            if (e.target.files.length > 0) {
+                var file = e.target.files[0];
+
+                // 1. Label ismini güncelle
+                var fileName = file.name;
+                var label = e.target.nextElementSibling;
+                label.innerText = fileName;
+
+                // 2. Anlık Önizleme (FileReader API)
+                var reader = new FileReader();
+                reader.onload = function(event) {
+                    // productPreview ID'li elementi bul ve src'sini seçilen dosya yap
+                    var preview = document.getElementById('productPreview');
+                    if(preview) {
+                        preview.src = event.target.result;
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
 }
+
 <style>
     .profile-menu li a {
         color: #111 !important;
@@ -100,4 +148,17 @@
             color: #111 !important;
             font-weight: bold;
         }
+    /* Dosya seçme butonunun tüm sayfayı kaplamasını engellemek için */
+    .custom-file {
+        position: relative;
+        display: inline-block;
+        width: 100%; /* Sadece bulunduğu sütunu kaplar */
+
+        margin-bottom: 0;
+    }
+
+    .custom-file-input {
+        cursor: pointer;
+    }
+
 </style>

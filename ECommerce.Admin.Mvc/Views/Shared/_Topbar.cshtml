@@ -50,7 +50,8 @@
                     <span class="mr-2 d-none d-lg-inline text-gray-600 small">
                         @User.Identity.Name  <!-- Cookie auth Name claim -->
                     </span>
-                    <img class="img-profile rounded-circle" src="~/img/undraw_female_profile.svg">
+                    <my-img file-name="@StaticFiles.AdminAvatar"
+                            class="img-profile rounded-circle" />
                 </a>
                 <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
                     <a class="dropdown-item" href="@Url.Action("Profile", "Account")">

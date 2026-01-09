@@ -1,10 +1,6 @@
 ﻿using ECommerce.Application.DTOs.Order;
 using ECommerce.Application.DTOs.Product;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace ECommerce.Application.DTOs.User
 {
@@ -15,7 +11,7 @@ namespace ECommerce.Application.DTOs.User
         public string FirstName { get; set; } = null!;
         public string LastName { get; set; } = null!;
         public string FullName => $"{FirstName} {LastName}";
-        public string Password { get; set; } = null!; // Sadece create/update aşamasında lazım olabilir
+        public string? Password { get; set; } // Create/update aşamasında farklı gereksinim//daha sonra bakılacak
         public string Phone { get; set; } = null!;
         public string Address { get; set; } = null!;
 

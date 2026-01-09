@@ -6,7 +6,7 @@
 @{
     ViewData["Title"] = "Contact Us";
     ViewData["PageTitle"] = ViewData["Title"];  // Dinamik baþlýk
-    var isAdmin = User.IsInRole("Admin");
+    var isAdmin = User.IsInRole("Admin") || User.IsInRole("SystemAdmin");
     var categories = ViewBag.Categories as List<CategoryViewModel> ?? new List<CategoryViewModel>();
     var productListingViewModel = new ProductListingViewModel
     {
@@ -16,9 +16,6 @@
 
 @Html.Partial("_HeroSection", productListingViewModel)
 
-
-
-   
 
 <section class="contact spad">
     <div class="container">

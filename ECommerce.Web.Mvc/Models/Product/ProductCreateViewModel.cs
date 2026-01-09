@@ -1,5 +1,4 @@
-﻿using ECommerce.Web.Mvc.Models.Category;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace ECommerce.Web.Mvc.Models.Product
 {
@@ -25,6 +24,7 @@ namespace ECommerce.Web.Mvc.Models.Product
         [MaxLength(1000)]
         public string Details { get; set; }
         public string ImageUrl { get; set; }
+        public IFormFile? ImageFile { get; set; }
 
     }
 }

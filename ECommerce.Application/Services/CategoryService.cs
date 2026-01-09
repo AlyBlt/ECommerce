@@ -2,8 +2,7 @@
 using ECommerce.Application.Interfaces.Repositories;
 using ECommerce.Application.Interfaces.Services;
 using ECommerce.Domain.Entities;
-using System.Collections.Generic;
-using System.Linq;
+
 
 namespace ECommerce.Application.Services
 {
@@ -27,7 +26,8 @@ namespace ECommerce.Application.Services
                 Id = e.Id,
                 Name = e.Name,
                 Color = e.Color,
-                IconCssClass = e.IconCssClass
+                IconCssClass = e.IconCssClass,
+                ImageUrl = e.ImageUrl
             });
         }
 
@@ -41,7 +41,8 @@ namespace ECommerce.Application.Services
                 Id = entity.Id,
                 Name = entity.Name,
                 Color = entity.Color,
-                IconCssClass = entity.IconCssClass
+                IconCssClass = entity.IconCssClass,
+                ImageUrl = entity.ImageUrl
             };
         }
 
@@ -54,6 +55,7 @@ namespace ECommerce.Application.Services
                 Name = catDto.Name,
                 Color = catDto.Color,
                 IconCssClass = catDto.IconCssClass,
+                ImageUrl = catDto.ImageUrl,
                 CreatedAt = DateTime.Now
             };
             await _categoryRepository.AddAsync(entity);
@@ -70,6 +72,7 @@ namespace ECommerce.Application.Services
             existingEntity.Name = catDto.Name;
             existingEntity.Color = catDto.Color;
             existingEntity.IconCssClass = catDto.IconCssClass;
+            existingEntity.ImageUrl = catDto.ImageUrl;
 
             await _categoryRepository.UpdateAsync(existingEntity);  
             await _categoryRepository.SaveAsync();

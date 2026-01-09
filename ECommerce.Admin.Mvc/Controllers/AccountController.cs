@@ -1,24 +1,25 @@
-﻿using ECommerce.Admin.Mvc.Filters;
+﻿using ECommerce.Application.Filters;
 using ECommerce.Admin.Mvc.Models.User;
 using ECommerce.Application.DTOs.User;
 using ECommerce.Application.Interfaces.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace ECommerce.Admin.Mvc.Controllers
 {
     [Route("admin/account")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "AdminPanelAccess")]
     [ActiveUserAuthorize]
     public class AccountController : Controller
     {
-        private readonly IUserService _userService;
+        private readonly IUserService _userApiService;
 
-        public AccountController(IUserService userService)
+        public AccountController(IUserService userApiService)
         {
-            _userService = userService;
+            _userApiService = userApiService;
         }
 
         // Profile sayfası 
@@ -28,28 +29,23 @@ namespace ECommerce.Admin.Mvc.Controllers
             var adminId = GetCurrentUserId();
             if (adminId == 0) return RedirectToAction("Login", "Auth");
 
-            var adminDto = await _userService.GetAsync(adminId);
+            // UserApiService içindeki GetAsync metodunu kullanıyoruz
+            // Bu metot arka planda HttpClient ile "api/user/{id}" adresine gider
+            var adminDto = await _userApiService.GetAsync(adminId);
+
             if (adminDto == null) return RedirectToAction("Login", "Auth");
 
-            // DTO -> ViewModel Mapping
-            var model = MapToViewModel(adminDto);
-
-            return View(model);
+            return View(MapToViewModel(adminDto));
         }
 
-        // Settings sayfası (GET)
         [HttpGet("settings")]
         public async Task<IActionResult> Settings()
         {
-            var adminId = GetCurrentUserId();
-            if (adminId == 0) return RedirectToAction("Login", "Auth");
-
-            var adminDto = await _userService.GetAsync(adminId);
+            
+            var adminDto = await _userApiService.GetCurrentUserAsync(GetCurrentUserId());
             if (adminDto == null) return RedirectToAction("Login", "Auth");
 
-            var model = MapToViewModel(adminDto);
-
-            return View(model);
+            return View(MapToViewModel(adminDto));
         }
 
         // Settings sayfası (POST)
@@ -57,32 +53,58 @@ namespace ECommerce.Admin.Mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Settings(UserViewModel model)
         {
+            ModelState.Remove("RoleName");
+          
             if (!ModelState.IsValid)
+            {
                 return View(model);
+            }
 
-            // Mevcut veriyi servisten çekelim (E-posta değişikliği kontrolü vb. için gerekebilir)
-            var adminDto = await _userService.GetAsync(model.Id);
-            if (adminDto == null) return RedirectToAction("Login", "Auth");
+           
+            try
+            {
+                var currentUserId = GetCurrentUserId();
+                var adminDto = await _userApiService.GetAsync(currentUserId);
 
-            // ViewModel -> DTO Güncellemesi
-            adminDto.FirstName = model.FirstName;
-            adminDto.LastName = model.LastName;
-            adminDto.Email = model.Email;
-            adminDto.Phone = model.Phone;
-            adminDto.Address = model.Address;
+                if (adminDto == null)
+                {
+                    ModelState.AddModelError("", "User not found.");
+                    return View(model);
+                }
 
-            // Servis üzerinden güncelleyelim
-            await _userService.UpdateAsync(adminDto);
+                // Map values from ViewModel to DTO
+                adminDto.FirstName = model.FirstName;
+                adminDto.LastName = model.LastName;
+                adminDto.Email = model.Email;
+                adminDto.Phone = model.Phone;
+                adminDto.Address = model.Address;
+               
 
-            TempData["SuccessMessage"] = "Settings saved successfully!";
-            return View(model);
+                // Call the API service to update
+                await _userApiService.UpdateAsync(adminDto);
+
+                await UpdateUserCookie(adminDto.FirstName + " " + adminDto.LastName);
+
+                // Success notification
+                TempData["SuccessMessage"] = "Profile settings updated successfully!";
+
+                return RedirectToAction(nameof(Settings));
+            }
+            catch (Exception ex)
+            {
+                // Error notification with exception details
+                ModelState.AddModelError("", "An error occurred while updating the profile: " + ex.Message);
+                return View(model);
+            }
         }
 
 
         // --- Helper Methods ---
         private int GetCurrentUserId()
         {
-            return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim)) return 0; // Veya hata fırlat
+            return int.Parse(userIdClaim);
         }
 
         private UserViewModel MapToViewModel(UserDTO dto)
@@ -95,8 +117,30 @@ namespace ECommerce.Admin.Mvc.Controllers
                 Email = dto.Email,
                 Phone = dto.Phone,
                 Address = dto.Address,
-                RoleName = dto.RoleName // Artık Entity değil, DTO'dan gelen string isim
+                RoleName = dto.RoleName
             };
+        }
+
+        private async Task UpdateUserCookie(string newFullName)
+        {
+            var identity = (ClaimsIdentity)User.Identity!;
+
+            // Eski Name claim'ini bul ve kaldır
+            var existingClaim = identity.FindFirst(ClaimTypes.Name);
+            if (existingClaim != null)
+            {
+                identity.RemoveClaim(existingClaim);
+            }
+
+            // Yeni ismi ekle
+            identity.AddClaim(new Claim(ClaimTypes.Name, newFullName));
+
+            // Yeni kimlik bilgisiyle çerezi tekrar yaz (Login işlemine benzer)
+            var principal = new ClaimsPrincipal(identity);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, new AuthenticationProperties
+            {
+                IsPersistent = true // Kullanıcının "beni hatırla" ayarı korunsun
+            });
         }
     }
 }

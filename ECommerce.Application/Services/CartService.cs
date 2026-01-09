@@ -1,8 +1,6 @@
 ﻿using ECommerce.Application.Interfaces.Repositories;
 using ECommerce.Application.Interfaces.Services;
 using ECommerce.Domain.Entities;
-using System.Collections.Generic;
-using System.Linq;
 using ECommerce.Application.DTOs.Cart;
 
 namespace ECommerce.Application.Services
@@ -18,18 +16,17 @@ namespace ECommerce.Application.Services
         }
 
 
-        public async Task<IEnumerable<CartItemDTO>> GetCartItemsAsync(int userId)
+        public async Task<IEnumerable<CartItemDTO>> GetCartItemsAsync(int userId, string? token = null)
         {
+            // API doğrudan Repo ile konuşur, Token parametresine ihtiyacı yoktur ama imza için ekledik.
             var entities = await _cartItemRepository.GetCartItemsWithProductAndImagesAsync(userId);
-           
-            // MANUEL MAPPING
+
             return entities.Select(item => new CartItemDTO
             {
                 ProductId = item.ProductId,
                 Name = item.Product?.Name ?? "Unknown Product",
                 Price = item.Product?.Price ?? 0,
                 Quantity = item.Quantity,
-                // Eğer CartItem'da özel bir resim yoksa ürünün ana resmini al
                 ImageUrl = item.ImageUrl ?? item.Product?.Images?.FirstOrDefault(i => i.IsMain)?.Url
             });
         }
@@ -105,6 +102,15 @@ namespace ECommerce.Application.Services
             await _cartItemRepository.SaveAsync();
         }
 
+        public async Task SyncCartAsync(int userId, List<CartAddDTO> items, string? token = null)
+        {
+            if (items == null || !items.Any()) return;
+
+            foreach (var item in items)
+            {
+                await AddToCartAsync(userId, item);
+            }
+        }
 
     }
 }

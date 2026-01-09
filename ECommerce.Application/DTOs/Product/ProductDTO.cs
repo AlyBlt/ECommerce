@@ -1,9 +1,5 @@
 ﻿using ECommerce.Application.DTOs.ProductComment;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace ECommerce.Application.DTOs.Product
 {
@@ -11,9 +7,9 @@ namespace ECommerce.Application.DTOs.Product
     {
         public int Id { get; set; }
         public int CategoryId { get; set; }
-        public string CategoryName { get; set; } = null!;
+        public string? CategoryName { get; set; }
         public int SellerId { get; set; }
-        public string SellerName { get; set; } = null!;
+        public string? SellerName { get; set; }
         public string Name { get; set; } = null!;
         public decimal Price { get; set; }
         public decimal? OldPrice { get; set; }

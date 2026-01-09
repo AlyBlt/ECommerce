@@ -17,5 +17,8 @@ namespace ECommerce.Admin.Mvc.Models.Category
         [Required]
         [StringLength(50, MinimumLength = 2)]
         public string IconCssClass { get; set; } = null!;
+
+        public string? ImageUrl { get; set; }
+        public IFormFile? ImageFile { get; set; }
     }
 }

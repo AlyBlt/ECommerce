@@ -1,7 +1,6 @@
 ﻿using ECommerce.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
+
 
 namespace ECommerce.Data.DbContexts
 
@@ -58,7 +57,7 @@ namespace ECommerce.Data.DbContexts
                 entity.HasKey(r => r.Id); // PK
                 entity.Property(r => r.Name)
                       .IsRequired()
-                      .HasMaxLength(10); // Max 10 karakter
+                      .HasMaxLength(20); // Max 10 karakter
                 entity.Property(r => r.CreatedAt)
                       .IsRequired();
             });

@@ -9,32 +9,58 @@
 
 <div class="card shadow mb-4">
     <div class="card-body">
-
-        <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+        @* 1.enctype eklendi *@
+        <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
             <input type="hidden" asp-for="Id" />
+            @* 2. MEVCUT RESİM YOLUNU SAKLAMAK İÇİN *@
+            <input type="hidden" asp-for="ImageUrl" />
 
-            <div class="form-group">
-                <label asp-for="Name" class="font-weight-bold"></label>
-                <input asp-for="Name" class="form-control" />
-                <span asp-validation-for="Name" class="text-danger"></span>
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="form-group">
+                        <label asp-for="Name" class="font-weight-bold"></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Color" class="font-weight-bold"></label>
+                        <input asp-for="Color" class="form-control" type="text" placeholder="#ff9900" />
+                        <span asp-validation-for="Color" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="IconCssClass" class="font-weight-bold"></label>
+                        <input asp-for="IconCssClass" class="form-control" placeholder="fa fa-home" />
+                        <span asp-validation-for="IconCssClass" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="col-md-4 text-center">
+                    <div class="form-group">
+                        <label class="font-weight-bold d-block">Current / New Image</label>
+                        <div class="mb-3">
+                            @* Mevcut resmi gösteren Tag Helper (Preview için ID verildi) *@
+                            <my-img file-name="@Model.ImageUrl"
+                                    id="categoryPreview"
+                                    class="img-thumbnail shadow-sm"
+                                    style="width: 200px; height: 200px; object-fit: cover;" />
+                        </div>
+                        <div class="custom-file text-left">
+                            <input type="file" asp-for="ImageFile" class="custom-file-input" id="customFile" accept="image/*">
+                            <label class="custom-file-label" for="customFile">Change Image...</label>
+                        </div>
+                        <span asp-validation-for="ImageFile" class="text-danger small"></span>
+                    </div>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label asp-for="Color" class="font-weight-bold"></label>
-                <input asp-for="Color" class="form-control" type="text" placeholder="#ff9900" />
-                <span asp-validation-for="Color" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="IconCssClass" class="font-weight-bold"></label>
-                <input asp-for="IconCssClass" class="form-control" placeholder="fa fa-home" />
-                <span asp-validation-for="IconCssClass" class="text-danger"></span>
-            </div>
-
-            <button type="submit" class="btn btn-primary mt-2">Update</button>
+            <hr />
+            <button type="submit" class="btn btn-primary mt-2">
+                <i class="fas fa-save"></i> Update
+            </button>
             <a class="btn btn-secondary mt-2" asp-action="List">Cancel</a>
         </form>
-
     </div>
 </div>
 
@@ -42,4 +68,27 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
+    <script>
+        // Dosya seçildiğinde önizleme yapan script
+        document.getElementById('customFile').addEventListener('change', function (e) {
+            if (e.target.files.length > 0) {
+                var file = e.target.files[0];
+
+                // Label güncelle
+                var label = e.target.nextElementSibling;
+                label.innerText = file.name;
+
+                // FileReader ile anlık değişim
+                var reader = new FileReader();
+                reader.onload = function (event) {
+                    var preview = document.getElementById('categoryPreview');
+                    if (preview) {
+                        preview.src = event.target.result;
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
 }

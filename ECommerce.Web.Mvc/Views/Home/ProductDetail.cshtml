@@ -7,7 +7,7 @@
 @{
     ViewData["Title"] = "Product Details"; 
     ViewData["PageTitle"] = ViewData["Title"];
-    var isAdmin = User.IsInRole("Admin");
+    var isAdmin = User.IsInRole("Admin") || User.IsInRole("SystemAdmin");
     var categories = ViewBag.Categories as List<CategoryViewModel> ?? new List<CategoryViewModel>();
     var productListingViewModel = new ProductListingViewModel
     {
@@ -30,7 +30,9 @@
             <div class="col-lg-6 col-md-6">
                 <div class="product__details__pic">
                     <div class="product__details__pic__item">
-                        <img class="product__details__pic__item--large" src="@Url.Content(Model.ImageUrl)" alt="@Model.Name" >
+                        <img class="product__details__pic__item--large"
+                             src="@ImageHelper.GetUrl(Model.ImageUrl)"
+                             alt="@Model.Name">
                     </div>
                 </div>
             </div>
@@ -88,7 +90,7 @@
                         </div>
                     </div>
 
-                     @if (User.IsInRole("Admin"))
+                    @if (isAdmin)
                      {
                         <a href="javascript:void(0);" style="cursor: not-allowed; opacity: 0.7;" title="Admins cannot add favorites" data-product-id="@Model.Id">
                         <i class="fa fa-heart primary-btn"></i>
@@ -102,11 +104,11 @@
                     }
 
                     <form id="add-to-cart-form" method="post" action="@Url.Action("AddProduct", "Cart")">
-                         <input type="hidden" name="productId" value="@Model.Id" />
+                        <input type="hidden" name="productId" value="@Model.Id" />
                         <input type="hidden" name="name" value="@Model.Name" />
                         <input type="hidden" name="price" value="@Model.Price" />
-                        <input type="hidden" name="imageUrl" value="@Model.ImageUrl" />
-                         <input type="hidden" name="quantity" value="1" />
+                        <input type="hidden" name="imageUrl" value="@ImageHelper.GetUrl(Model.ImageUrl)" />
+                        <input type="hidden" name="quantity" value="1" />
                         @if (!Model.Enabled)
                         {
                           <button class="primary-btn" disabled
@@ -116,7 +118,7 @@
                         }
                         else
                        {
-                             @if (User.IsInRole("Admin"))
+                            @if (isAdmin)
                              {
                                 <button type="submit" class="primary-btn" style="opacity:0.5; cursor:not-allowed;" title="Admins cannot shop">ADD TO CART</button>
                              }
@@ -210,7 +212,7 @@
                         </div>
                     }
                 }
-                else if (User.IsInRole("Admin"))
+                else if (isAdmin)
                 {
                     <p>As an admin, you are not authorized to write comment here.</p>
                 }
@@ -272,9 +274,9 @@
             {
                 <div class="col-lg-3 col-md-4 col-sm-6">
                     <div class="product__item">
-                        <div class="product__item__pic set-bg" data-setbg="@Url.Content(product.ImageUrl)">
+                        <div class="product__item__pic set-bg" data-setbg="@ImageHelper.GetUrl(product.ImageUrl)">
                             <ul class="product__item__pic__hover">
-                                @if (User.IsInRole("Admin"))
+                                @if (isAdmin)
                                 {
                                  <li>
                                         <a href="javascript:void(0);" style="cursor: not-allowed; opacity: 0.5;" title="Admins cannot add favorites" class="admin-disabled" data-product-id="@product.Id">
@@ -302,7 +304,7 @@
                                     }
                                     else
                                     {
-                                        @if (User.IsInRole("Admin"))
+                                        @if (isAdmin)
                                         {
                                             <a href="javascript:void(0);" class="admin-disabled"
                                                style="cursor: not-allowed; opacity: 0.5;"
@@ -310,7 +312,7 @@
                                            data-is-active="@product.IsActive.ToString().ToLower()"
                                            data-name="@product.Name"
                                            data-price="@product.Price"
-                                           data-image="@product.ImageUrl">
+                                           data-image="@ImageHelper.GetUrl(product.ImageUrl)" >
                                             <i class="fa fa-shopping-cart"></i>
                                         </a>
                                         }
@@ -320,7 +322,7 @@
                                                data-is-active="@product.IsActive.ToString().ToLower()"
                                                data-name="@product.Name"
                                                data-price="@product.Price"
-                                               data-image="@product.ImageUrl">
+                                               data-image="@ImageHelper.GetUrl(product.ImageUrl)">
                                                 <i class="fa fa-shopping-cart"></i>
                                             </a>
                                         }
@@ -469,12 +471,17 @@
                 addToCartForm.addEventListener("submit", function (e) {
                     e.preventDefault();
 
+                    // 1. Kullanıcının arayüzde değiştirdiği gerçek miktarı al
+                    var displayQuantity = document.querySelector(".pro-qty input").value;
+                    // 2. Formun içindeki gizli (hidden) inputu bu yeni değerle güncelle
+                    var hiddenQuantityInput = this.querySelector("input[name='quantity']");
+                    hiddenQuantityInput.value = displayQuantity;
                   
                     var productId = this.querySelector("input[name='productId']").value;
                     var name = this.querySelector("input[name='name']").value;
                     var price = this.querySelector("input[name='price']").value;
                     var imageUrl = this.querySelector("input[name='imageUrl']").value;
-                    var quantity = this.querySelector("input[name='quantity']").value;
+                    var quantity = hiddenQuantityInput.value; // Güncel değer
 
                     fetch("@Url.Action("AddProduct", "Cart")", {
                         method: "POST",

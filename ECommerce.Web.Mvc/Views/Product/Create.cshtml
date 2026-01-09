@@ -29,7 +29,7 @@
                         <div class="alert alert-danger">@TempData["Error"]</div>
                     }
 
-                    <form asp-action="Create" method="post">
+                    <form asp-action="Create" method="post" enctype="multipart/form-data">
                         @Html.AntiForgeryToken()
 
                         <div class="form-group mb-3">
@@ -65,13 +65,27 @@
 
                         <div class="form-group mb-3">
                             <label>Details</label>
-                            <textarea class="form-control" asp-for="Details" rows="4"></textarea>
+                            <textarea class="form-control" asp-for="Details" rows="4" placeholder="Describe your product..."></textarea>
                             @Html.ValidationMessageFor(m => m.Details, "", new { @class = "text-danger" })
                         </div>
-
                         <div class="form-group mb-3">
-                            <label>Image URL<span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" asp-for="ImageUrl" required />
+                            <label>Product Image Preview</label>
+                            <div class="mb-2">
+                                @* TagHelper kullanımı *@
+                                <my-img file-name="@Model.ImageUrl"
+                                        id="productPreview"
+                                        class="img-thumbnail"
+                                        style="max-width: 200px; display: block;" />
+                            </div>
+
+                            <label>Upload Image<span class="text-danger">*</span></label>
+                            <div class="custom-file" style="overflow: hidden;">
+                                <input type="file" name="ImageFile" class="custom-file-input" id="customFile" accept="image/*">
+                                <label class="custom-file-label" for="customFile">Choose file...</label>
+                            </div>
+
+                            @* Create'de ImageUrl başlangıçta boş olabilir, ancak validasyon için tutulabilir *@
+                            <input type="hidden" asp-for="ImageUrl" id="hiddenImageUrl" />
                             @Html.ValidationMessageFor(m => m.ImageUrl, "", new { @class = "text-danger" })
                         </div>
 
@@ -85,6 +99,26 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Dosya seçildiğinde etiketi değiştirir ve anlık önizleme yapar
+        document.getElementById('customFile').addEventListener('change', function (e) {
+            if (e.target.files.length > 0) {
+                var file = e.target.files[0];
+
+                // 1. Label ismini güncelle
+                var fileName = file.name;
+                var label = e.target.nextElementSibling;
+                label.innerText = fileName;
+
+                // 2. Anlık Önizleme (FileReader API)
+                var reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('productPreview').src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
 }
 <style>
     .profile-menu li a {
@@ -100,4 +134,15 @@
             color: #111 !important;
             font-weight: bold;
         }
+
+    .custom-file {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .custom-file-input {
+        cursor: pointer;
+    }
 </style>

@@ -1,35 +1,35 @@
-﻿using ECommerce.Admin.Mvc.Filters;
+﻿using ECommerce.Application.Filters;
 using ECommerce.Admin.Mvc.Models.Comment;
 using ECommerce.Application.DTOs.ProductComment;
 using ECommerce.Application.Interfaces.Services;
-using ECommerce.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerce.Admin.MVC.Controllers
 {
     [Route("ProductComment")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "AdminPanelAccess")]
     [ActiveUserAuthorize]
     public class ProductCommentController : Controller
     {
-        private readonly IProductCommentService _commentService;
-        
-        public ProductCommentController(IProductCommentService commentService)
+        private readonly IProductCommentService _commentApiService;
+
+        public ProductCommentController(IProductCommentService commentApiService)
         {
-            _commentService = commentService;
+            _commentApiService = commentApiService;
         }
 
-        // GET: /admin/comment
+        // GET: /ProductComment
         [HttpGet("")]
         public async Task<IActionResult> List()
         {
-            var commentDtos = await _commentService.GetAllAsync();
-            // DTO'dan ViewModel'e eşleme (Mapping)
+            // API'den "api/productcomment" GET isteği
+            var commentDtos = await _commentApiService.GetAllAsync();
+
             var model = commentDtos.Select(c => new CommentViewModel
             {
                 Id = c.Id,
-                UserName = c.UserName, // Serviste birleştirdiğimiz hazır string
+                UserName = c.UserName,
                 ProductName = c.ProductName,
                 Text = c.Text,
                 Rating = c.StarCount,
@@ -40,34 +40,27 @@ namespace ECommerce.Admin.MVC.Controllers
             return View(model);
         }
 
-        // GET: /ProductComment/{id}/approve
+        // GET: /ProductComment/ApproveForm/{id}
         [HttpGet("ApproveForm/{id}")]
         public async Task<IActionResult> Approve(int id)
         {
-            var dto = await _commentService.GetAsync(id);
+            var dto = await _commentApiService.GetAsync(id);
             if (dto == null)
             {
                 TempData["ErrorMessage"] = "Comment not found!";
                 return RedirectToAction("List");
             }
 
-            var model = MapDtoToViewModel(dto);
-            return View(model);
+            return View(MapDtoToViewModel(dto));
         }
 
-        // POST: /admin/comment/5/approve
+        // POST: /ProductComment/{id}/approve
         [HttpPost("{id}/approve")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveComment(int id)
         {
-            var comment = await _commentService.GetAsync(id);
-            if (comment == null)
-            {
-                TempData["ErrorMessage"] = "Comment not found!";
-                return RedirectToAction("List");
-            }
-
-            await _commentService.ApproveCommentAsync(id);
+            // API'ye "api/productcomment/approve/{id}" POST isteği
+            await _commentApiService.ApproveCommentAsync(id);
             TempData["SuccessMessage"] = "Comment approved successfully!";
             return RedirectToAction("List");
         }
@@ -77,37 +70,29 @@ namespace ECommerce.Admin.MVC.Controllers
         [HttpGet("RejectForm/{id}")]
         public async Task<IActionResult> Reject(int id)
         {
-            var dto = await _commentService.GetAsync(id);
+            var dto = await _commentApiService.GetAsync(id);
             if (dto == null)
             {
                 TempData["ErrorMessage"] = "Comment not found!";
                 return RedirectToAction("List");
             }
 
-            var model = MapDtoToViewModel(dto);
-            return View(model);
+            return View(MapDtoToViewModel(dto));
         }
-
 
         // POST: /ProductComment/{id}/reject
         [HttpPost("{id}/reject")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RejectComment(int id)
         {
-            var comment = await _commentService.GetAsync(id);
-            if (comment == null)
-            {
-                TempData["ErrorMessage"] = "Comment not found!";
-                return RedirectToAction("List");
-            }
-
-            await _commentService.RejectCommentAsync(id);
+            // API'ye "api/productcomment/reject/{id}" POST isteği
+            await _commentApiService.RejectCommentAsync(id);
             TempData["SuccessMessage"] = "Comment rejected successfully!";
             return RedirectToAction("List");
         }
 
 
-        // Kod tekrarını önlemek için yardımcı private metod
+        //Helper
         private CommentViewModel MapDtoToViewModel(ProductCommentDTO dto)
         {
             return new CommentViewModel

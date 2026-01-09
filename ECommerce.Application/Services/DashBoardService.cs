@@ -1,7 +1,6 @@
 ﻿using ECommerce.Application.DTOs.Dashboard;
 using ECommerce.Application.Interfaces.Repositories;
 using ECommerce.Application.Interfaces.Services;
-using ECommerce.Domain.Entities;
 
 
 public class DashboardService : IDashboardService

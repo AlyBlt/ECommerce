@@ -8,7 +8,10 @@
         public decimal Price { get; set; }
         public int SellerId { get; set; }
         public string SellerName { get; set; } 
-        public bool Enabled { get; set; } 
-        
+        public bool Enabled { get; set; }
+
+        // Yeni eklenen alan: Ürünün ana resminin dosya adını tutacak
+        public string? MainImageUrl { get; set; }
+
     }
 }

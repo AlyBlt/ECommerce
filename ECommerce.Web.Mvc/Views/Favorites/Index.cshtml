@@ -1,145 +1,138 @@
 ﻿@model List<ECommerce.Web.Mvc.Models.Favorite.FavoriteItemViewModel>
 @{
     ViewData["Title"] = "My Favorites";
-    var isAdmin = User.IsInRole("Admin");
-    var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
-    var isBuyerOrSeller = User.IsInRole("Buyer") || User.IsInRole("Seller");
+    var isAdmin = User.IsInRole("Admin") || User.IsInRole("SystemAdmin");
 }
+
 @if (isAdmin)
 {
-    <div class="alert alert-danger">
-        You are not authorized to view or modify the favorites. Please proceed to the admin dashboard.
+    <div class="container mt-5">
+        <div class="alert alert-danger shadow-sm">
+            <i class="fa fa-exclamation-triangle"></i> You are not authorized to view or modify the favorites. Please proceed to the admin dashboard.
+        </div>
     </div>
 }
 else
 {
-<section class="shoping-cart spad">
-    <div class="container">
+    <section class="shoping-cart spad">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="m-0">My Favorites</h2>
+                @if (Model.Any())
+                {
+                    <form asp-controller="Favorites" asp-action="ClearFavorites" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Clear all favorites?')">
+                            <i class="fa fa-trash"></i> Clear All
+                        </button>
+                    </form>
+                }
+            </div>
 
-    @if (TempData["Error"] != null)
-    {
+            @if (TempData["Error"] != null)
+            {
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     @TempData["Error"]
-                    <button type="button" class="close" data-dismiss="alert">
-                        <span>&times;</span>
-                    </button>
+                    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
                 </div>
-    }
-    @if (TempData["Success"] != null || TempData["Message"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @(TempData["Success"] ?? TempData["Message"])
-            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-        </div>
-    }
+            }
+            @if (TempData["Success"] != null || TempData["Message"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @(TempData["Success"] ?? TempData["Message"])
+                    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+                </div>
+            }
 
-
-   
-     <h2 class="mb-4">My Favorites</h2>
-
-        @if (Model.Any())
-        {
-            <div class="shoping__cart__table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="shoping__product">Product</th>
-                            <th>Price</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        @foreach (var item in Model)
-                        {
+            @if (Model.Any())
+            {
+                <div class="shoping__cart__table">
+                    <table>
+                        <thead>
                             <tr>
-                                <td class="shoping__cart__item d-flex align-items-center">
-                                    <img src="@(!string.IsNullOrEmpty(item.ImageUrl) ? Url.Content(item.ImageUrl) : Url.Content("~/img/product/default.jpg"))"
-                                         alt="@item.Name"
-                                         class="me-3"
-                                         style="width:70px; height:70px; object-fit:cover;" />
-                                    <h5 class="m-0">@item.Name</h5>
-                                </td>
-
-                                <td class="shoping__cart__price">
-                                    $ @item.Price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
-                                </td>
-
-                                <td class="shoping__cart__item__close d-flex flex-column">
-                                    <!-- Remove -->
-                                    <form asp-controller="Favorites"
-                                          asp-action="Remove"
-                                          method="post" class="mb-1">
-                                        <input type="hidden" name="productId" value="@item.ProductId" />
-                                        <button type="submit" class="primary-btn btn-sm">
-                                            Remove
-                                        </button>
-                                    </form>
-
-                                    <!-- Add to Cart -->
-                                    <form class="add-to-cart-form" data-productid="@item.ProductId" data-name="@item.Name" data-price="@item.Price" data-imageurl="@item.ImageUrl" data-quantity="1">
-                                        @Html.AntiForgeryToken()
-                                        <button type="button" class="primary-btn btn-sm add-to-cart-btn">
-                                            Add to Cart
-                                        </button>
-                                    </form>
-                                </td>
+                                <th class="shoping__product">Product</th>
+                                <th>Price</th>
+                                <th class="text-right">Actions</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="shoping__cart__item">
+                                        <div class="d-flex align-items-center">
+                                            @* --- YENİ CUSTOM TAGHELPER KULLANIMI --- *@
+                                            <my-img file-name="@item.ImageUrl"
+                                                    alt="@item.Name"
+                                                    style="width:70px; height:70px; object-fit:cover;"
+                                                    class="rounded shadow-sm me-3" />
+                                            <h5>@item.Name</h5>
+                                        </div>
+                                    </td>
+                                    <td class="shoping__cart__price">
+                                        $ @item.Price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
+                                    </td>
+                                    <td class="text-right">
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <form class="add-to-cart-form" data-productid="@item.ProductId" data-name="@item.Name" data-price="@item.Price" data-imageurl="@ImageHelper.GetUrl(item.ImageUrl)" data-quantity="1">
+                                                @Html.AntiForgeryToken()
+                                                <button type="button" class="btn btn-success btn-sm add-to-cart-btn" title="Add to Cart">
+                                                    <i class="fa fa-shopping-cart"></i>
+                                                </button>
+                                            </form>
 
-            <div class="shoping__cart__btns mt-4 d-flex justify-content-between">
+                                            <form asp-controller="Favorites" asp-action="Remove" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="productId" value="@item.ProductId" />
+                                                <button type="submit" class="btn btn-outline-secondary btn-sm ml-2" title="Remove">
+                                                    <i class="fa fa-times"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
 
-                <!-- BACK -->
-                <a asp-controller="Home" asp-action="Listing" class="primary-btn cart-btn">
-                    ← Back to Shop
-                </a>
-
-                <!-- CLEAR FAVORITES -->
-                <form asp-controller="Favorites" asp-action="ClearFavorites" method="post" class="go-to-cart-form">
-                    <button type="submit" class="primary-btn cart-btn">Clear Favorites</button>
-                </form>
-
-                <!-- GO TO CART -->
-                <a asp-controller="Cart" asp-action="Index" class="primary-btn cart-btn">
-                    Go to Cart →
-                </a>
-
-            </div>
-        }
-        else
-        {
-            <p class="text-muted">Your favorites list is empty.</p>
-
-            <a asp-controller="Home" asp-action="Listing" class="primary-btn mt-3">
-                ← Back to Shop
-            </a>
-        }
-
-    </div>
-</section>
+                <div class="row mt-4">
+                    <div class="col-lg-6">
+                        <div class="shoping__cart__btns">
+                            <a asp-controller="Home" asp-action="Listing" class="primary-btn cart-btn text-center" style="width: 220px; padding: 12px 10px; font-size: 13px;display: inline-block; box-sizing: border-box;">
+                                <i class="fa fa-arrow-left"></i> BACK TO SHOP
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 d-flex justify-content-end">
+                        <a asp-controller="Cart" asp-action="Index" class="primary-btn cart-btn text-center" style="width: 220px; padding: 12px 10px; font-size: 13px; color: #ffffff; background: #7fad39; box-sizing: border-box;">
+                            GO TO CART <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fa fa-heart-o fa-4x text-light mb-3"></i>
+                    <p class="text-muted">Your favorites list is empty.</p>
+                    <a asp-controller="Home" asp-action="Listing" class="primary-btn mt-3">DISCOVER PRODUCTS</a>
+                </div>
+            }
+        </div>
+    </section>
 }
+
 
 @section Styles {
     <style>
-        .go-to-cart-form button {
-            border: none;
-        }
-
+        
         .shoping__cart__table table {
             font-size: 0.9rem;
         }
-
-        .shoping__cart__item__close .primary-btn {
-            padding: 4px 10px;
-            font-size: 0.85rem;
-        }
+     
     </style>
 }
-
-
 
 
 @section Scripts {

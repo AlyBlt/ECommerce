@@ -3,7 +3,6 @@
     ViewData["Title"] = "Comment List";
  }
 
-<h1 class="h3 mb-4 text-gray-800">Comments</h1>
 
 <div class="card shadow mb-4">
     <div class="card-header py-3">
@@ -52,36 +51,55 @@
                             <td>@item.Id</td>
                             <td>@item.UserName</td>
                             <td>@item.ProductName</td>
-                            <td>@item.Text</td>
-                            <td>@item.Rating</td>
+                            <td>
+                                @* Uzun yorumları kontrol altında tutmak için bir sınırlama *@
+                                <span title="@item.Text">
+                                    @(item.Text.Length > 50 ? item.Text.Substring(0, 50) + "..." : item.Text)
+                                </span>
+                            </td>
+                            <td class="text-nowrap">
+                                @* Rating yanına sarı bir yıldız *@
+                                <span class="badge badge-light border">
+                                    <i class="fas fa-star text-warning mr-1"></i> @item.Rating
+                                </span>
+                            </td>
                             <td>
                                 @if (item.IsApproved)
                                 {
-                                    <span class="badge badge-success">Approved</span>
+                                    <span class="badge badge-success"><i class="fas fa-check-circle mr-1"></i> Approved</span>
                                 }
                                 else if (item.IsRejected)
                                 {
-                                    <span class="badge badge-danger">Rejected</span>
+                                    <span class="badge badge-danger"><i class="fas fa-times-circle mr-1"></i> Rejected</span>
                                 }
                                 else
                                 {
-                                    <span class="badge badge-warning">Pending</span>
+                                    <span class="badge badge-warning"><i class="fas fa-clock mr-1"></i> Pending</span>
                                 }
                             </td>
                             <td>
+                                <div class="d-flex align-items-center">
                                 @if (!item.IsApproved && !item.IsRejected)
                                 {
-                                    <a asp-controller="ProductComment" asp-action="ApproveForm" asp-route-id="@item.Id" class="btn btn-success btn-sm mb-2">
-                                        <i class="fas fa-check"></i> Approve
-                                    </a>
-                                    <a asp-controller="ProductComment" asp-action="RejectForm" asp-route-id="@item.Id" class="btn btn-danger btn-sm">
-                                        <i class="fas fa-times"></i> Reject
-                                    </a>
-                                }
+                                        @* Onay Butonu *@
+                                        <a asp-controller="ProductComment" asp-action="ApproveForm" asp-route-id="@item.Id"
+                                           class="btn btn-success btn-sm shadow-sm mr-2"
+                                           title="Approve Comment">
+                                            <i class="fas fa-check"></i>
+                                        </a>
+
+                                        @* Reddet Butonu *@
+                                        <a asp-controller="ProductComment" asp-action="RejectForm" asp-route-id="@item.Id"
+                                           class="btn btn-danger btn-sm shadow-sm"
+                                           title="Reject Comment">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                  }
                                 else
                                 {
-                                    <span class="text-secondary">No action</span>
+                                        <small class="text-muted font-italic">Processed</small>
                                 }
+                                </div>
                             </td>
                         </tr>
                     }

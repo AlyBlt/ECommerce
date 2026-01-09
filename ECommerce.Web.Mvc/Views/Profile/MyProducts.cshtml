@@ -47,9 +47,8 @@
                     <h4 class="mb-4">My Products</h4>
 
                     <!-- ADD NEW PRODUCT BUTONU -->
-                   
                         <div class="mb-3">
-                            <a asp-controller="Product" asp-action="Create" class="btn btn-success">Add New Product</a>
+                        <a asp-controller="Product" asp-action="Create" class="btn btn-success"><i class="fa fa-plus pr-2"></i>Add New Product</a>
                         </div>
                   
                     @if (!Model.Any())
@@ -64,7 +63,8 @@
                                 <div class="col-lg-12 mb-4">
                                     <div class="product-card">
                                         <!-- Product Image -->
-                                        <div class="product-image" style="background-image: url('@Url.Content(item.ImageUrl)');">
+                                        @* ImageHelper kullanarak API URL'ini almalısın *@
+                                        <div class="product-image" style="background-image: url('@ImageHelper.GetUrl(item.ImageUrl)');">
                                         </div>
 
                                         <!-- Product Info -->
@@ -83,63 +83,112 @@
                                         </div>
 
                                         <!-- Seller Actions -->
-                                        <div class="product-actions mt-2">
-                                            <!-- Edit Link -->
-                                            <a asp-controller="Product" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary">Edit</a>
+                                        <div class="product-actions mt-3 d-flex align-items-center" style="gap: 10px;">
 
-                                            <!-- Delete Button -->
-                                            <form asp-controller="Product" asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this product?');">
-                                                @Html.AntiForgeryToken()
-                                                <input type="hidden" name="id" value="@item.Id" />
-                                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                                            </form>
+                                            <a asp-controller="Product" asp-action="Edit" asp-route-id="@item.Id"
+                                               class="btn btn-sm btn-outline-warning text-dark" title="Edit Product">
+                                                <i class="fa fa-pencil"></i>
+                                            </a>
 
-                                            <!-- Toggle Status Button -->
                                             <form asp-controller="Product" asp-action="ToggleStatus" method="post" class="d-inline">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@item.Id" />
-                                                <button type="submit" class="btn btn-sm btn-warning">
-                                                    @(item.Enabled ? "Disable" : "Enable")
+                                                <button type="submit" class="btn btn-sm @(item.Enabled ? "btn-outline-success" : "btn-outline-secondary")"
+                                                        title="@(item.Enabled ? "Disable Product" : "Enable Product")">
+                                                    <i class="fa @(item.Enabled ? "fa-eye" : "fa-eye-slash")"></i>
                                                 </button>
                                             </form>
 
-                                           
+                                            <form asp-controller="Product" asp-action="Delete" method="post" class="d-inline"
+                                                  onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Product">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </form>
+
                                         </div>
 
                                         <!-- Comments -->
                                         @if (item.Comments != null && item.Comments.Any())
                                         {
                                             <div class="comments mt-3">
-                                                <h6 class="comment-title">Comments</h6>
-                                                @foreach (var c in item.Comments)
-                                                {
-                                                    <div class="comment-box">
-                                                        <div class="comment-header">
-                                                            <strong>@c.UserName</strong>
-                                                            <span class="rating">
-                                                                @for (int i = 1; i <= c.Rating; i++)
-                                                                {
-                                                                    <span class="star">★</span>
-                                                                }
-                                                                @for (int i = 1; i <= (5 - c.Rating); i++)
-                                                                {
-                                                                    <span class="star empty">★</span>
-                                                                }
-                                                            </span>
-                                                            @if (!c.IsApproved)
-                                                            {
-                                                                <span class="badge badge-warning">Pending Approval</span>
-                                                            }
-                                                        </div>
-                                                        <p class="comment-text">@c.Text</p>
+                                                <div class="comment-summary d-flex justify-content-between align-items-center mb-2" style="background: #fdfdfd; padding: 5px 10px; border-radius: 4px; border-left: 3px solid #7fad39;">
+                                                    <h6 class="comment-title mb-0" style="border:none; padding:0; margin:0;">Comments (@item.Comments.Count)</h6>
+                                                    <div class="avg-rating">
+                                                        <span class="text-muted small">Avg:</span>
+                                                        <strong style="color: #f1c40f;">
+                                                            @item.Comments.Average(x => x.Rating).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) ★
+                                                        </strong>
                                                     </div>
+                                                </div>
+
+                                                <div class="visible-comment">
+                                                    @foreach (var c in item.Comments.Take(1))
+                                                    {
+                                                        <div class="comment-box border-bottom-0">
+                                                            <div class="comment-header">
+                                                                <strong>@c.UserName</strong>
+                                                                <span class="rating">
+                                                                    @for (int i = 1; i <= c.Rating; i++)
+                                                                    {
+                                                                        <span class="star">★</span>
+                                                                    }
+                                                                    @for (int i = 1; i <= (5 - c.Rating); i++)
+                                                                    {
+                                                                        <span class="star empty">★</span>
+                                                                    }
+                                                                </span>
+                                                                @if (!c.IsApproved)
+                                                                {
+                                                                    <span class="badge badge-warning">Pending Approval</span>
+                                                                }
+                                                            </div>
+                                                            <p class="comment-text">@c.Text</p>
+                                                        </div>
+                                                    }
+                                                </div>
+
+                                                @if (item.Comments.Count > 1)
+                                                {
+                                                    <div class="collapse extra-comments-scroll" id="moreComments-@item.Id">
+                                                        @foreach (var c in item.Comments.Skip(1))
+                                                        {
+                                                            <div class="comment-box border-top mt-2">
+                                                                <div class="comment-header pt-2">
+                                                                    <strong>@c.UserName</strong>
+                                                                    <span class="rating">
+                                                                        @for (int i = 1; i <= c.Rating; i++)
+                                                                        {
+                                                                            <span class="star">★</span>
+                                                                        }
+                                                                        @for (int i = 1; i <= (5 - c.Rating); i++)
+                                                                        {
+                                                                            <span class="star empty">★</span>
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                                <p class="comment-text">@c.Text</p>
+                                                            </div>
+                                                        }
+                                                    </div>
+
+                                                    <button class="btn btn-sm btn-outline-secondary btn-block mt-2"
+                                                            type="button"
+                                                            data-toggle="collapse"
+                                                            data-target="#moreComments-@item.Id"
+                                                            aria-expanded="false"
+                                                            style="font-size: 12px; border-style: dashed;">
+                                                        Show All Comments (@item.Comments.Count)
+                                                    </button>
                                                 }
                                             </div>
                                         }
                                         else
                                         {
-                                            <div class="no-comments mt-2">
-                                                <em>No comments for this product.</em>
+                                            <div class="no-comments mt-2 px-3">
+                                                <em class="small text-muted">No comments for this product yet.</em>
                                             </div>
                                         }
                                     </div>
@@ -267,4 +316,22 @@
         font-size: 13px;
         color: #666;
     }
+
+    .extra-comments-scroll {
+        max-height: 350px; /* İstediğin yüksekliği verebilirsin */
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-right: 10px;
+        margin-top: 10px;
+    }
+
+        /* İnce ve şık bir kaydırma çubuğu için (isteğe bağlı) */
+        .extra-comments-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .extra-comments-scroll::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
 </style>

@@ -13,33 +13,27 @@ namespace ECommerce.Web.Mvc.Controllers
     [AllowAnonymous]
     public class CartController : Controller
     {
-        private readonly ICartService _cartService;
-        private readonly IProductService _productService;
+        private readonly ICartService _cartApiService;
+        private readonly IProductService _productApiService;
 
-        public CartController(ICartService cartService, IProductService productService)
+        public CartController(ICartService cartApiService, IProductService productApiService)
         {
-            _cartService = cartService;
-            _productService = productService;
+            _cartApiService = cartApiService;
+            _productApiService = productApiService;
         }
 
         // ---------------- CURRENT USER ----------------
         private int? GetCurrentUserId()
         {
-            if (User.Identity?.IsAuthenticated != true)
-                return null;
-
+            if (User.Identity?.IsAuthenticated != true) return null;
             var claim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
             return claim != null ? int.Parse(claim.Value) : null;
         }
 
         private bool CanModifyCart()
         {
-            // Admin favoriyi göremez, müdahale edemez
-            if (User.IsInRole("Admin"))
-                return false;
-
-            // Diğer kullanıcılar (Buyer/Seller ya da anonim kullanıcılar) müdahale edebilir
-            return true;
+            // Admin ve SystemAdmin rollerinden herhangi birine sahipse false döner
+            return !(User.IsInRole("Admin") || User.IsInRole("SystemAdmin"));
         }
 
         // ---------------- CART INDEX ----------------
@@ -50,13 +44,13 @@ namespace ECommerce.Web.Mvc.Controllers
 
             if (userId.HasValue)
             {
-                var dtos = await _cartService.GetCartItemsAsync(userId.Value);
-                // DTO -> ViewModel Mapping
+                // Get from API (Database)
+                var dtos = await _cartApiService.GetCartItemsAsync(userId.Value);
                 cartItems = dtos.Select(d => new CartItemViewModel
                 {
                     ProductId = d.ProductId,
-                    Name = d.Name,      
-                    Price = d.Price,    
+                    Name = d.Name,
+                    Price = d.Price,
                     Quantity = d.Quantity,
                     ImageUrl = d.ImageUrl
                 }).ToList();
@@ -68,6 +62,7 @@ namespace ECommerce.Web.Mvc.Controllers
             }
 
             HttpContext.Session.SetInt32("CartCount", cartItems.Sum(c => c.Quantity));
+            HttpContext.Session.SetString("CartTotal", cartItems.Sum(c => c.Quantity * c.Price).ToString("0.00"));
 
             return View(new CartViewModel
             {
@@ -82,19 +77,15 @@ namespace ECommerce.Web.Mvc.Controllers
         {
             if (!CanModifyCart())
             {
-                TempData["ErrorAdmin"] = "You cannot modify the cart.";
-                return RedirectToAction("Index");
+                return Json(new { success = false, message = "Admins cannot perform shopping actions." });
             }
 
             if (quantity <= 0)
                 quantity = 1;
 
-            var userId = GetCurrentUserId();
-            int totalCount = 0;
-            decimal totalPrice = 0;
-
+           
             // Ürün bilgisi HER ZAMAN server’dan alınır
-            var product = await _productService.GetAsync(productId);
+            var product = await _productApiService.GetAsync(productId);
             if (product == null || !product.Enabled)
             {
                 return Json(new
@@ -104,26 +95,22 @@ namespace ECommerce.Web.Mvc.Controllers
                 });
             }
 
-           
+            var userId = GetCurrentUserId();
+            int totalCount = 0;
+            decimal totalPrice = 0;
+
             if (userId.HasValue)
             {
-                // Adminse sepeti sıfırla
-                if (User.IsInRole("Admin"))
+                // Logged in: Add to Database via API
+                await _cartApiService.AddToCartAsync(userId.Value, new CartAddDTO
                 {
-                    SessionHelper.ClearCart(HttpContext);  // Adminse session sepeti temizle
-                }
-                else
-                {
-                    await _cartService.AddToCartAsync(userId.Value, new CartAddDTO
-                    {
-                        ProductId = productId,
-                        Quantity = (byte)quantity
-                    });
-
-                    var dtos = await _cartService.GetCartItemsAsync(userId.Value);
-                    totalCount = dtos.Sum(d => d.Quantity);
-                    totalPrice = dtos.Sum(d => d.TotalPrice);
-                }
+                    ProductId = productId,
+                    Quantity = (byte)quantity
+                });
+                var dtos = await _cartApiService.GetCartItemsAsync(userId.Value);
+                totalCount = dtos.Sum(d => d.Quantity);
+                totalPrice = dtos.Sum(d => d.TotalPrice);
+               
             }
             else
             {
@@ -177,20 +164,16 @@ namespace ECommerce.Web.Mvc.Controllers
 
             if (userId.HasValue)
             {
-                if (User.IsInRole("Admin"))
-                {
-                    SessionHelper.ClearCart(HttpContext); // Admin için sepetteki ürünleri temizle
-                }
                 if (quantity == 0)
                 {
-                    await _cartService.RemoveCartItemAsync(userId.Value, productId);
+                    await _cartApiService.RemoveCartItemAsync(userId.Value, productId);
                 }
                 else
                 {
-                    await _cartService.UpdateCartItemAsync(userId.Value, productId, quantity);
+                    await _cartApiService.UpdateCartItemAsync(userId.Value, productId, quantity);
                 }
 
-                var dtos = await _cartService.GetCartItemsAsync(userId.Value);
+                var dtos = await _cartApiService.GetCartItemsAsync(userId.Value);
                 totalCount = dtos.Sum(c => c.Quantity);
                 totalPrice = dtos.Sum(c => c.TotalPrice);
             }
@@ -234,7 +217,7 @@ namespace ECommerce.Web.Mvc.Controllers
 
             if (userId.HasValue)
             {
-                await _cartService.ClearCartAsync(userId.Value);
+                await _cartApiService.ClearCartAsync(userId.Value);
             }
             else
             {

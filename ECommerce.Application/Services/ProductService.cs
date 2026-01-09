@@ -3,10 +3,7 @@ using ECommerce.Application.DTOs.ProductComment;
 using ECommerce.Application.Interfaces.Repositories;
 using ECommerce.Application.Interfaces.Services;
 using ECommerce.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+
 
 namespace ECommerce.Application.Services
 {
@@ -48,8 +45,18 @@ namespace ECommerce.Application.Services
                 SellerId = dto.SellerId,
                 IsFeatured = dto.IsFeatured,
                 Enabled = true,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                Images = new List<ProductImageEntity>()
             };
+
+            if (!string.IsNullOrEmpty(dto.MainImageUrl))
+            {
+                entity.Images.Add(new ProductImageEntity
+                {
+                    Url = dto.MainImageUrl,
+                    IsMain = true
+                });
+            }
 
             await _productRepository.AddAsync(entity);
             await _productRepository.SaveAsync();
@@ -57,7 +64,7 @@ namespace ECommerce.Application.Services
 
         public async Task UpdateAsync(ProductDTO dto)
         {
-            var entity = await _productRepository.GetByIdAsync(dto.Id);
+            var entity = await _productRepository.GetByIdWithIncludesAsync(dto.Id);
             if (entity == null) throw new Exception("Product not found");
 
             // Alanları güncelle
@@ -69,6 +76,31 @@ namespace ECommerce.Application.Services
             entity.CategoryId = dto.CategoryId;
             entity.IsFeatured = dto.IsFeatured;
             entity.Enabled = dto.Enabled;
+
+            // --- RESİM GÜNCELLEME MANTIĞI BURASI ---
+            if (!string.IsNullOrEmpty(dto.MainImageUrl))
+            {
+                // Mevcut bir ana resim var mı?
+                var mainImage = entity.Images?.FirstOrDefault(i => i.IsMain);
+
+                if (mainImage != null)
+                {
+                    // Varsa: URL'ini yeni gelenle değiştir
+                    mainImage.Url = dto.MainImageUrl;
+                }
+                else
+                {
+                    // Yoksa veya liste boşsa: Yeni bir ImageEntity ekle
+                    if (entity.Images == null) entity.Images = new List<ProductImageEntity>();
+
+                    entity.Images.Add(new ProductImageEntity
+                    {
+                        Url = dto.MainImageUrl,
+                        IsMain = true,
+                        ProductId = entity.Id
+                    });
+                }
+            }
 
             await _productRepository.UpdateAsync(entity);
             await _productRepository.SaveAsync();
@@ -184,23 +216,23 @@ namespace ECommerce.Application.Services
                 Enabled = entity.Enabled,
                 IsFeatured = entity.IsFeatured,
                 CategoryId = entity.CategoryId,
-                CategoryName = entity.Category?.Name ?? "Kategorisiz",
+                CategoryName = entity.Category?.Name ?? "Uncategorized",
                 SellerId = entity.SellerId,
-                SellerName = entity.Seller != null ? $"{entity.Seller.FirstName} {entity.Seller.LastName}" : "Bilinmeyen Satıcı",
+                SellerName = entity.Seller != null ? $"{entity.Seller.FirstName} {entity.Seller.LastName}" : "Unknown Seller",
                 CreatedAt = entity.CreatedAt,
                 Rating = entity.Rating,
                 ReviewCount = confirmedComments.Count,
                 MainImageUrl = entity.Images?.FirstOrDefault(i => i.IsMain)?.Url
                                ?? entity.Images?.FirstOrDefault()?.Url
-                               ?? "/img/product/default.jpg",
-                // KRİTİK DÜZELTME 2: Yorum listesini DTO'ya aktaralım (Details sayfasında görünmesi için)
+                               ?? "default.jpg",
+                // Yorum listesini DTO'ya aktaralım (Details sayfasında görünmesi için)
                 Comments = confirmedComments.Select(c => new ProductCommentDTO
                 {
                     Id = c.Id,
                     Text = c.Text,
                     StarCount = c.StarCount,
                     CreatedAt = c.CreatedAt,
-                    UserName = c.User != null ? $"{c.User.FirstName} {c.User.LastName}" : "Müşteri",
+                    UserName = c.User != null ? $"{c.User.FirstName} {c.User.LastName}" : "Customer",
                     IsConfirmed = c.IsConfirmed
                 }).ToList()
             };

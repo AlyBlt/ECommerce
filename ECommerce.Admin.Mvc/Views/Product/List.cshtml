@@ -7,7 +7,7 @@
 
 <div class="card shadow mb-4">
     <div class="card-header py-3 d-flex justify-content-between align-items-center">
-        <h6 class="m-0 font-weight-bold text-info">Product List</h6>
+        <h6 class="m-0 font-weight-bold text-primary">All Products</h6>
     </div>
 
     <div class="card-body">
@@ -37,6 +37,7 @@
                 <thead class="thead-light">
                     <tr>
                         <th>ID</th>
+                        <th>Image</th>
                         <th>Name</th>
                         <th>Category</th>
                         <th>Seller</th>
@@ -51,6 +52,12 @@
                     {
                         <tr>
                             <td>@product.Id</td>
+                            <td>
+                               @* Burada ürünün resmi varsa onu, yoksa DefaultProduct'ı basıyoruz. *@
+                                <my-img file-name="@product.MainImageUrl"
+                                        class="img-thumbnail"
+                                        style="width: 50px; height: 50px; object-fit: cover;" />
+                            </td>
                             <td>@product.Name</td>
                             <td>@product.CategoryName</td>
                             <td>
@@ -70,16 +77,25 @@
                             </td>
 
                             <td>
-                                <form asp-action="ToggleStatus" method="post" class="d-inline">
-                                    <input type="hidden" name="id" value="@product.Id" />
-                                    <button type="submit" class="btn btn-warning btn-sm">
-                                        @(product.Enabled ? "Disable" : "Enable")
-                                    </button>
-                                </form>
+                                <div class="d-flex">
+                                    @* 1. Status Toggle (Enable/Disable) *@
+                                    <form asp-action="ToggleStatus" method="post" class="d-inline">
+                                        <input type="hidden" name="id" value="@product.Id" />
+                                        <button type="submit"
+                                                class="btn @(product.Enabled ? "btn-warning" : "btn-info") btn-sm shadow-sm mr-2"
+                                                title="@(product.Enabled ? "Disable Product" : "Enable Product")">
+                                            <i class="fas @(product.Enabled ? "fa-eye-slash" : "fa-eye")"></i>
+                                        </button>
+                                    </form>
 
-                                <a asp-action="Delete" asp-route-id="@product.Id" class="btn btn-danger btn-sm ms-1">
-                                    Delete
-                                </a>
+                                    @* 2. Delete Action *@
+                                    <a asp-action="Delete" asp-route-id="@product.Id"
+                                       class="btn btn-danger btn-sm shadow-sm"
+                                       title="Delete Product"
+                                       onclick="return confirm('Are you sure you want to delete this product?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     }

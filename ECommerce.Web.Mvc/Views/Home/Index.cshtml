@@ -1,9 +1,9 @@
 ﻿@model ECommerce.Web.Mvc.Models.Home.HomePageViewModel
 @{
     ViewData["Title"] = "Home Page";
-    var isAdmin = User.IsInRole("Admin");
-    var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
-    var isBuyerOrSeller = User.IsInRole("Buyer") || User.IsInRole("Seller");
+    var isAdmin = User.IsInRole("Admin") || User.IsInRole("SystemAdmin");
+    var isAuthenticated = User.Identity?.IsAuthenticated ?? false;    // kullanılmadı ama özel indirimler vs ileride kullanılabilir--şimdilik kalsın
+    var isBuyerOrSeller = User.IsInRole("Buyer") || User.IsInRole("Seller"); // kullanılmadı ama özel indirimler vs ileride kullanılabilir--şimdilik kalsın
 }
 
 
@@ -36,12 +36,15 @@
                 @* Admin için kategori linklerinin gizlenmesi *@
         {
             <ul>
+             @if (Model.Categories != null)
+            {
                 @foreach (var cat in Model.Categories)
                 {
                     <li class="disabled">
                         <span>@cat.Name</span>
                     </li>
                 }
+            }
             </ul>
             <div class="alert alert-danger">
                 <strong>Access Denied:</strong> Admins cannot view products in categories on the user interface.
@@ -86,7 +89,7 @@
                             <div class="col-lg-12">
                                 <!-- sol kategori menüsüne göre hizalandı -->
                                 <div class="special-offers-slider my-slider">
-                                    <div class="my-slide" style="background-image: url('@Url.Content("~/img/hero/free-shipping.jpg?v2")');">
+                                    <div class="my-slide" style="background-image: url('@ImageHelper.GetUrl(StaticFiles.FreeShippingBanner)');">
                                         <div class="my-slide-content">
                                             <span style="font-size:40px; font-weight:bold;">Special Offer</span>
                                             <h2>Free Shipping<br>On Orders Over $30</h2>
@@ -95,7 +98,7 @@
                                             <a href="@Url.Action("Listing", "Home", new { filter = "free-shipping", page = 1 })" class="primary-btn">SHOP NOW</a>
                                         </div>
                                     </div>
-                                    <div class="my-slide" style="background-image: url('@Url.Content("~/img/hero/sale-banner.jpg?v2")');">
+                                    <div class="my-slide" style="background-image: url('@ImageHelper.GetUrl(StaticFiles.SaleBanner)');">
                                         <div class="my-slide-content">
                                             <span style="font-size:40px; font-weight:bold;">Limited Time</span>
                                             <h2>Save Up To 40%</h2>
@@ -104,7 +107,7 @@
                                             <a href="@Url.Action("Listing", "Home", new { filter = "on-sale", page = 1 })" class="primary-btn">BROWSE DEALS</a>
                                         </div>
                                     </div>
-                                    <div class="my-slide" style="background-image: url('@Url.Content("~/img/hero/new-arrivals.jpg?v2")');">
+                                    <div class="my-slide" style="background-image: url('@ImageHelper.GetUrl(StaticFiles.NewArrivalsBanner)');">
                                         <div class="my-slide-content">
                                             <span style="font-size:40px; font-weight:bold;">New Arrivals</span>
                                             <h2>Fresh Products<br>Just Landed</h2>
@@ -134,7 +137,8 @@
                 @foreach (var item in Model.Featured.DiscountedProducts)
                 {
                     <div class="col-lg-3">
-                        <div class="categories__item set-bg" data-setbg="@Url.Content(item.ImageUrl)">
+                        @* Dinamik Ürün Görseli *@
+                        <div class="categories__item set-bg" data-setbg="@ImageHelper.GetUrl(item.ImageUrl)">
                             <h5 style="border-radius:10px; font-size: 14px; padding: 5px;"><a href="#" style="border-radius:10px; font-size: 14px; padding: 5px;"> @item.Price.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("en-US")) </a></h5>
                             <span>@((int)((item.OldPrice - item.Price) * 100 /item.OldPrice)) % Discount</span>
                         </div>
@@ -168,7 +172,7 @@
             {
                 <div class="col-lg-3 col-md-4 col-sm-6 mix popular">
                     <div class="featured__item">
-                        <div class="featured__item__pic set-bg" data-setbg="@Url.Content(product.ImageUrl)">
+                        <div class="featured__item__pic set-bg" data-setbg="@ImageHelper.GetUrl(product.ImageUrl)">
                             <ul class="featured__item__pic__hover"></ul>
                         </div>
                              <div class="featured__item__text">
@@ -212,7 +216,7 @@
             {
                 <div class="col-lg-3 col-md-4 col-sm-6 mix new-arrival" style="display:none;">
                     <div class="featured__item">
-                        <div class="featured__item__pic set-bg" data-setbg="@Url.Content(product.ImageUrl)">
+                        <div class="featured__item__pic set-bg" data-setbg="@ImageHelper.GetUrl(product.ImageUrl)">
                             <ul class="featured__item__pic__hover"></ul>
                         </div>
                         <div class="featured__item__text">
@@ -257,7 +261,6 @@
 @* Mid Banner silindi *@
 
 
-
 <!-- BLOG SECTION -->
 <section class="from-blog spad">
     <div class="container">
@@ -276,7 +279,8 @@
                     <div class="blog__item__pic">
                         <!-- Blog yazısının resmine link ekleyerek dış siteye yönlendirme -->
                         <a href="https://www.siliconmadeacademy.com/" target="_blank">
-                            <img src="/img/blog/blog-6.jpg?v2" alt="Cooking Tips Photo">
+                            @* Blog Görseli TagHelper Kullanımı *@
+                            <my-img file-name="@StaticFiles.BlogCookingTips" alt="Cooking Tips" />
                         </a>
                     </div>
                     <div class="blog__item__text">
@@ -294,7 +298,7 @@
                     <div class="blog__item__pic">
                         <!-- Blog yazısının resmine link ekleyerek dış siteye yönlendirme -->
                         <a href="https://www.siliconmadeacademy.com/" target="_blank">
-                            <img src="/img/blog/blog-4.jpg?v2" alt="Organic Foods Photo">
+                            <my-img file-name="@StaticFiles.BlogOrganicBenefits" alt="Organic Foods Photo" />
                         </a>
                     </div>
                     <div class="blog__item__text">
@@ -312,7 +316,7 @@
                     <div class="blog__item__pic">
                         <!-- Blog yazısının resmine link ekleyerek dış siteye yönlendirme -->
                         <a href="https://www.siliconmadeacademy.com/" target="_blank">
-                            <img src="/img/blog/blog-3.jpg?v2" alt="Fruits Photo">
+                            <my-img file-name="@StaticFiles.BlogFruitRich" alt="Fruits Photo" />
                         </a>
                     </div>
                     <div class="blog__item__text">

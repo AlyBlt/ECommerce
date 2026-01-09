@@ -1,32 +1,31 @@
-﻿using ECommerce.Admin.Mvc.Filters;
+﻿using ECommerce.Application.Filters;
 using ECommerce.Admin.Mvc.Models.User;
 using ECommerce.Application.Interfaces.Services;
-using ECommerce.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerce.Admin.Mvc.Controllers
 {
     [Route("admin/users")] // Route daha spesifik hale getirildi
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "AdminPanelAccess")]
     [ActiveUserAuthorize]
     public class UserController : Controller
     {
-        private readonly IUserService _userService;
-      
-        public UserController(IUserService userService)
+        private readonly IUserService _userApiService;
+
+        public UserController(IUserService userApiService)
         {
-            _userService = userService;
+            _userApiService = userApiService;
         }
 
         // GET: /admin/users/list
         [HttpGet("list")]
         public async Task<IActionResult> List()
         {
-            var userdto = await _userService.GetAllAsync();
+            // API'den "api/user/all" endpoint'ine istek gider
+            var userDtos = await _userApiService.GetAllAsync();
 
-            // DTO -> ViewModel Mapping
-            var vm = userdto.Select(u => new UserViewModel
+            var vm = userDtos.Select(u => new UserViewModel
             {
                 Id = u.Id,
                 FirstName = u.FirstName,
@@ -36,118 +35,101 @@ namespace ECommerce.Admin.Mvc.Controllers
                 IsSellerApproved = u.IsSellerApproved,
                 HasPendingSellerRequest = u.HasPendingSellerRequest,
                 IsRejected = u.IsRejected,
-                RoleName = u.RoleName // Servisten gelen rol adını ekledik
+                RoleName = u.RoleName
             }).OrderByDescending(u => u.HasPendingSellerRequest)
-            .ThenBy(u => u.FirstName).ToList();
+              .ThenBy(u => u.FirstName).ToList();
 
             return View(vm);
         }
 
-        // GET: /admin/users/approve/5
+        // GET: /admin/users/approve/{id}
         [HttpGet("approve/{id}")]
         public async Task<IActionResult> ApproveForm(int id)
         {
-            var userDto = await _userService.GetAsync(id);
+            // API'den "api/user/{id}" endpoint'ine istek gider
+            var userDto = await _userApiService.GetAsync(id);
             if (userDto == null)
             {
                 TempData["ErrorMessage"] = "User not found!";
                 return RedirectToAction(nameof(List));
             }
 
-            var model = new UserViewModel
-            {
-                Id = userDto.Id,
-                FirstName = userDto.FirstName,
-                LastName = userDto.LastName,
-                Email = userDto.Email,
-                Enabled = userDto.Enabled,
-                IsSellerApproved = userDto.IsSellerApproved,
-                HasPendingSellerRequest = userDto.HasPendingSellerRequest,
-                RoleName = userDto.RoleName
-            };
-
+            var model = MapToViewModel(userDto);
             return View("Approve", model);
         }
 
-        // POST: /admin/users/approve/5
+        // POST: /admin/users/approve/{id}
         [HttpPost("approve/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApproveConfirmed(int id)
         {
-            var userDto = await _userService.GetAsync(id);
-            if (userDto == null)
-            {
-                TempData["ErrorMessage"] = "User not found!"; 
-                return RedirectToAction(nameof(List));
-            }
-           
-            await _userService.ApproveSellerAsync(id); 
-            TempData["SuccessMessage"] = "Seller successfully approved!";  
+            // API'ye "api/user/approve/{id}" POST isteği gider
+            await _userApiService.ApproveSellerAsync(id);
+            TempData["SuccessMessage"] = "Seller successfully approved!";
             return RedirectToAction(nameof(List));
         }
 
-        // GET: /admin/users/reject/5
+        // GET: /admin/users/reject/{id}
         [HttpGet("reject/{id}")]
         public async Task<IActionResult> RejectForm(int id)
         {
-            var userDto = await _userService.GetAsync(id);
+            var userDto = await _userApiService.GetAsync(id);
             if (userDto == null)
             {
                 TempData["ErrorMessage"] = "User not found!";
                 return RedirectToAction(nameof(List));
             }
 
-            var model = new UserViewModel
-            {
-                Id = userDto.Id,
-                FirstName = userDto.FirstName,
-                LastName = userDto.LastName,
-                Email = userDto.Email,
-                Enabled = userDto.Enabled,
-                IsSellerApproved = userDto.IsSellerApproved,
-                HasPendingSellerRequest = userDto.HasPendingSellerRequest,
-                IsRejected = userDto.IsRejected
-            };
-
-            return View("Reject", model); 
+            return View("Reject", MapToViewModel(userDto));
         }
 
-        // POST: /admin/users/reject/5
+        // POST: /admin/users/reject/{id}
         [HttpPost("reject/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RejectConfirmed(int id)
         {
-            await _userService.RejectSellerAsync(id);
-
+            // API'ye "api/user/reject/{id}" POST isteği gider
+            await _userApiService.RejectSellerAsync(id);
             TempData["SuccessMessage"] = "Seller request rejected!";
             return RedirectToAction(nameof(List));
         }
 
-
         //----------------TOGGLE---------------
 
-        // GET: /admin/users/toggle/5
+       // GET: /admin/users/toggle/{id} (Action adı GET olsa da API'de POST çalışır)
         [HttpGet("toggle/{id}")]
         public async Task<IActionResult> ToggleEnabled(int id)
         {
-            var userDto = await _userService.GetAsync(id);
-            if (userDto == null)
+            try
             {
-                TempData["ErrorMessage"] = "User not found!";
-                return RedirectToAction(nameof(List));
+                // API'ye "api/user/toggle/{id}" POST isteği gider
+                await _userApiService.ToggleEnabledAsync(id);
+                TempData["SuccessMessage"] = "User status updated successfully!";
+            }
+            catch (Exception ex)
+            {
+                // API'den gelen "System Administrator cannot be deactivated" mesajını burada yakala
+                TempData["ErrorMessage"] = ex.Message;
             }
 
-            // Toggle işlemi servise bırak
-            await _userService.ToggleEnabledAsync(id);
-
-            // DB’den güncel kullanıcıyı tekrar çek
-            userDto = await _userService.GetAsync(id);
-
-            TempData["SuccessMessage"] = userDto.Enabled
-                ? "User activated successfully!"
-                : "User deactivated successfully!";
-
             return RedirectToAction(nameof(List));
+        }
+
+
+        // --- Helper Mapping ---
+        private UserViewModel MapToViewModel(ECommerce.Application.DTOs.User.UserDTO dto)
+        {
+            return new UserViewModel
+            {
+                Id = dto.Id,
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                Email = dto.Email,
+                Enabled = dto.Enabled,
+                IsSellerApproved = dto.IsSellerApproved,
+                HasPendingSellerRequest = dto.HasPendingSellerRequest,
+                RoleName = dto.RoleName
+            };
         }
     }
 }

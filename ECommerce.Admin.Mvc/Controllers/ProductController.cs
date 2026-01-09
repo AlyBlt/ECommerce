@@ -1,34 +1,30 @@
-﻿using ECommerce.Admin.Mvc.Filters;
+﻿using ECommerce.Application.Filters;
 using ECommerce.Admin.Mvc.Models.Product;
 using ECommerce.Application.Interfaces.Services;
-using ECommerce.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerce.Admin.MVC.Controllers
 {
     [Route("admin/products")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "AdminPanelAccess")]
     [ActiveUserAuthorize]
     public class ProductController : Controller
     {
-        private readonly IProductService _productService;
-        
-        public ProductController(IProductService productService)
+        private readonly IProductService _productApiService;
+
+        public ProductController(IProductService productApiService)
         {
-            _productService = productService;
-           
+            _productApiService = productApiService;
         }
 
         // GET: /admin/products
         [HttpGet("")]
         public async Task<IActionResult> List()
         {
+            // API'den api/product üzerinden tüm ürünleri çekiyoruz
+            var productDtos = await _productApiService.GetAllAsync();
 
-            // Servis artık List<ProductDTO> dönüyor
-            var productDtos = await _productService.GetAllAsync();
-
-            // DTO -> Admin List ViewModel Mapping
             var vm = productDtos.Select(p => new ProductListViewModel
             {
                 Id = p.Id,
@@ -36,35 +32,33 @@ namespace ECommerce.Admin.MVC.Controllers
                 Price = p.Price,
                 CategoryName = p.CategoryName ?? "No Category",
                 Enabled = p.Enabled,
-                SellerName = p.SellerName // Admin kimin sattığını da görmeli--view da ekle
+                SellerName = p.SellerName,
+                MainImageUrl = p.MainImageUrl
             }).ToList();
 
             return View(vm);
         }
-
-
 
         // POST: /admin/products/toggle
         [HttpPost("toggle")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleStatus(int id)
         {
-            await _productService.ToggleStatusAsync(id);
+            // API'deki api/product/toggle/{id} endpointine POST isteği atar
+            await _productApiService.ToggleStatusAsync(id);
             TempData["Success"] = "Product status updated.";
             return RedirectToAction("List");
         }
-
 
 
         // GET: /admin/products/{id}/delete
         [HttpGet("{id}/delete")]
         public async Task<IActionResult> Delete(int id)
         {
-
-            var dto = await _productService.GetAsync(id);
+            // API'den api/product/{id} üzerinden ürün detayını alıyoruz
+            var dto = await _productApiService.GetAsync(id);
             if (dto == null) return NotFound();
 
-            // DTO -> Delete ViewModel Mapping
             var model = new ProductDeleteViewModel
             {
                 Id = dto.Id,
@@ -76,7 +70,6 @@ namespace ECommerce.Admin.MVC.Controllers
             return View(model);
         }
 
-
         // POST: /admin/products/{id}/delete
         [HttpPost("{id}/delete")]
         [ValidateAntiForgeryToken]
@@ -84,7 +77,8 @@ namespace ECommerce.Admin.MVC.Controllers
         {
             try
             {
-                await _productService.DeleteAsync(id);
+                // API'ye api/product/{id} üzerinden DELETE isteği atar
+                await _productApiService.DeleteAsync(id);
                 TempData["Success"] = "Product deleted successfully!";
             }
             catch (Exception ex)
@@ -96,3 +90,5 @@ namespace ECommerce.Admin.MVC.Controllers
         }
     }
 }
+
+

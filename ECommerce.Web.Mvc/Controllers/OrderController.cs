@@ -1,9 +1,8 @@
-﻿using ECommerce.Application.Interfaces.Services;
-using ECommerce.Domain.Entities;
+﻿using ECommerce.Application.Filters;
+using ECommerce.Application.Interfaces.Services;
 using ECommerce.Web.Mvc.Models.Cart;
 using ECommerce.Web.Mvc.Models.Order;
 using ECommerce.Web.Mvc.Models.User;
-using ECommerce.Web.MVC.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -15,25 +14,26 @@ namespace ECommerce.Web.Mvc.Controllers
     [ActiveUserAuthorize]
     public class OrderController : Controller
     {
-        private readonly IOrderService _orderService;
-        private readonly IUserService _userService;
-        private readonly ICartService _cartService;
+        private readonly IOrderService _orderApiService;
+        private readonly IUserService _userApiService;
+        private readonly ICartService _cartApiService;
 
-        public OrderController(IOrderService orderService, IUserService userService, ICartService cartService)
+        public OrderController(IOrderService orderApiService, IUserService userApiService, ICartService cartApiService)
         {
-            _orderService = orderService;
-            _userService = userService;
-            _cartService = cartService;
+            _orderApiService = orderApiService;
+            _userApiService = userApiService;
+            _cartApiService = cartApiService;
         }
 
         // Cookie Authentication içindeki NameIdentifier (UserId) claim'ini okur
         private int GetCurrentUserId()
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            return int.Parse(userIdClaim!.Value);
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim)) return 0; // Veya hata fırlat
+            return int.Parse(userIdClaim);
         }
 
-              
+
         // ---------------- CREATE ORDER ----------------
         [HttpGet]
         public async Task<IActionResult> Create()
@@ -41,7 +41,7 @@ namespace ECommerce.Web.Mvc.Controllers
             var userId = GetCurrentUserId();
 
             // Kullanıcı bilgilerini çek
-            var user = await _userService.GetAsync(userId);
+            var user = await _userApiService.GetCurrentUserAsync(userId);
             if (user == null) return RedirectToAction("Login", "Auth");
 
             var model = new UserInformationViewModel
@@ -75,7 +75,7 @@ namespace ECommerce.Web.Mvc.Controllers
             var userId = GetCurrentUserId();
 
             // sepet öğelerini al
-            var cartItems = await _cartService.GetCartItemsAsync(userId);
+            var cartItems = await _cartApiService.GetCartItemsAsync(userId);
             if (!cartItems.Any())
             {
                 TempData["Message"] = "Your cart is empty.";
@@ -90,7 +90,7 @@ namespace ECommerce.Web.Mvc.Controllers
                     Name = c.Name,
                     Price = c.Price,
                     Quantity = (byte)c.Quantity,
-                    ImageUrl = c.ImageUrl ?? "/img/product/default.jpg"
+                    ImageUrl = c.ImageUrl
                 }).ToList()
             };
 
@@ -109,7 +109,7 @@ namespace ECommerce.Web.Mvc.Controllers
 
             if (!ModelState.IsValid)
             {
-                var items = await _cartService.GetCartItemsAsync(userId);
+                var items = await _cartApiService.GetCartItemsAsync(userId);
 
                 ViewBag.Cart = new CartViewModel
                 {
@@ -119,7 +119,7 @@ namespace ECommerce.Web.Mvc.Controllers
                         Name = c.Name,
                         Price = c.Price,
                         Quantity = (byte)c.Quantity,
-                        ImageUrl = c.ImageUrl ?? "/img/product/default.jpg"
+                        ImageUrl = c.ImageUrl
                     }).ToList()
                 };
 
@@ -128,7 +128,7 @@ namespace ECommerce.Web.Mvc.Controllers
             }
 
             // Sepeti çek
-            var cartItems = await _cartService.GetCartItemsAsync(userId);
+            var cartItems = await _cartApiService.GetCartItemsAsync(userId);
             if (!cartItems.Any())
             {
                 TempData["Message"] = "Your cart is empty.";
@@ -152,7 +152,7 @@ namespace ECommerce.Web.Mvc.Controllers
             // ARTIK BURADA ENTITY NEWLEMIYORUZ! 
             // Doğrudan cartItems (DTO listesi) gönderiyoruz.
 
-            var order = await _orderService.CreateOrderAsync(
+            var order = await _orderApiService.CreateOrderAsync(
                 userId,
                 model.DeliveryAddress,
                 model.PaymentMethod,
@@ -162,7 +162,7 @@ namespace ECommerce.Web.Mvc.Controllers
             );
 
             // DB'den sepeti temizle ve Session sayacını sıfırla
-            await _cartService.ClearCartAsync(userId);
+            await _cartApiService.ClearCartAsync(userId);
             HttpContext.Session.SetInt32("CartCount", 0);
             HttpContext.Session.Remove("UserInfo"); // Geçici bilgiyi temizle
 
@@ -175,7 +175,7 @@ namespace ECommerce.Web.Mvc.Controllers
         public async Task<IActionResult> Details(int id)
         {
             var userId = GetCurrentUserId();
-            var orderDto = await _orderService.GetOrderAsync(id);
+            var orderDto = await _orderApiService.GetOrderAsync(id);
 
             // Güvenlik kontrolü: Sipariş var mı ve bu kullanıcıya mı ait?
             if (orderDto == null || orderDto.UserId != userId)

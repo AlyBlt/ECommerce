@@ -5,7 +5,7 @@
 @{
     ViewData["Title"] = "Privacy Policy";
     ViewData["PageTitle"] = ViewData["Title"];  // Dinamik başlık
-    var isAdmin = User.IsInRole("Admin");
+    var isAdmin = User.IsInRole("Admin") || User.IsInRole("SystemAdmin"); //HeroSection için
     var categories = ViewBag.Categories as List<CategoryViewModel> ?? new List<CategoryViewModel>();
     var productListingViewModel = new ProductListingViewModel
     {

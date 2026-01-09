@@ -5,7 +5,6 @@
   
 }
 
-<h1 class="h3 mb-4 text-gray-800">Category List</h1>
 
 <!-- Success / Error mesajları -->
 @if (TempData["Success"] != null)
@@ -43,6 +42,7 @@
                 <thead class="thead-light">
                     <tr>
                         <th>ID</th>
+                        <th>Image</th>
                         <th>Name</th>
                         <th>Color</th>
                         <th>Icon</th>
@@ -54,19 +54,39 @@
                     {
                         <tr>
                             <td>@item.Id</td>
+                            <td style="width: 80px; text-align: center;">
+                                <my-img file-name="@item.ImageUrl"
+                                        class="img-profile rounded-circle"
+                                        style="width: 40px; height: 40px; object-fit: cover; border: 1px solid #e3e6f0;" />
+                            </td>
                             <td>@item.Name</td>
                             <td>
-                                <span style="display:inline-block;width:20px;height:20px;background-color:@item.Color;border:1px solid #ccc;"></span>
-                                @item.Color
-                            </td>
-                            <td><i class="@item.IconCssClass"></i> @item.IconCssClass</td>
-                            <td>
-                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
+                                <div class="d-flex align-items-center">
+                                    @{
+                                        // Renk kodunun başında # yoksa ekliyoruz (Örn: FF0000 -> #FF0000)
+                                        var safeColor = item.Color?.StartsWith("#") == true ? item.Color : "#" + item.Color;
+                                    }
+                                    @* Yuvarlak Renk Kutusu *@
+                                    <span style="display:inline-block; width:24px; height:24px; background-color:@safeColor; border-radius:50%; border:2px solid #fff; shadow: 0 0 5px rgba(0,0,0,0.2); margin-right:10px;"></span>
 
-                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">
-                                    <i class="fas fa-trash"></i> Delete
+                                    @* Renk Kodu Yazısı (Kırmızı kalmaması için rengi siyah yapıyoruz) *@
+                                    <span class="text-dark font-weight-bold">@item.Color</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    @* İkon: fa-fw sınıfı genişliği sabitler, daha düzgün durur *@
+                                    <i class="@item.IconCssClass fa-fw fa-lg mr-2 text-primary"></i>
+                                    <span class="text-muted small">@item.IconCssClass</span>
+                                </div>
+                            </td> 
+                            <td>
+                                @* Edit / Delete butonların *@
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm shadow-sm" title="Edit Category">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm shadow-sm" title="Delete Category">
+                                    <i class="fas fa-trash"></i>
                                 </a>
                             </td>
                         </tr>

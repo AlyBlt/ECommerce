@@ -5,7 +5,7 @@
 @{
     ViewData["Title"] = "About Us";
     ViewData["PageTitle"] = ViewData["Title"];  // Dinamik baþlýk
-    var isAdmin = User.IsInRole("Admin");
+    var isAdmin = User.IsInRole("Admin") || User.IsInRole("SystemAdmin"); //Bu sayfada yok ama herosection için eklendi
     var categories = ViewBag.Categories as List<CategoryViewModel> ?? new List<CategoryViewModel>();
     var productListingViewModel = new ProductListingViewModel
     {
@@ -21,7 +21,11 @@
         <div class="row">
             <div class="col-lg-8 col-md-8 mx-auto text-center">
 
-                <img src="/img/logo.png" class="img-fluid d-block mx-auto" style="width: 100px; margin-bottom: 30px; border-radius:5px;" alt="Logo">
+                @* --- DÜZENLENEN KISIM: Logo TagHelper ile çekildi --- *@
+                <my-img file-name="@StaticFiles.Logo"
+                        class="img-fluid d-block mx-auto"
+                        style="width: 100px; margin-bottom: 30px; border-radius:5px;"
+                        alt="Logo" />
 
                 <div class="about__text">
                     <div class="section-title">

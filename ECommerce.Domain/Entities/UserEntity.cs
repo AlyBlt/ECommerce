@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace ECommerce.Domain.Entities
 {
@@ -18,7 +13,7 @@ namespace ECommerce.Domain.Entities
         public bool Enabled { get; set; } = true;
         public DateTime CreatedAt { get; set; }
         public bool IsSellerApproved { get; set; } = false;
-        public bool HasPendingSellerRequest { get; set; } = false; // eklendi
+        public bool HasPendingSellerRequest { get; set; } = false; 
         public bool IsRejected { get; set; } = false;
         public string Phone { get; set; } = null!;
         public string Address { get; set; } = null!;

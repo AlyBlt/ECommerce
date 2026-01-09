@@ -1,15 +1,12 @@
-﻿using ECommerce.Application.DTOs.Order;
+﻿using ECommerce.Application.DTOs.Auth;
+using ECommerce.Application.DTOs.Order;
 using ECommerce.Application.DTOs.Product;
+using ECommerce.Application.DTOs.ProductComment;
 using ECommerce.Application.DTOs.User;
 using ECommerce.Application.Interfaces.Repositories;
 using ECommerce.Application.Interfaces.Services;
 using ECommerce.Domain.Entities;
-using Microsoft.IdentityModel.Tokens;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Text;
+
 
 namespace ECommerce.Application.Services
 {
@@ -67,7 +64,7 @@ namespace ECommerce.Application.Services
                         // Görsel bilgisini al (Eğer Product Include edilmişse)
                         ImageUrl = oi.Product?.Images?.FirstOrDefault(x => x.IsMain)?.Url
                                    ?? oi.Product?.Images?.FirstOrDefault()?.Url
-                                   ?? "/img/product/default.jpg"
+                                   ?? "default.jpg"
                     }).ToList() ?? new List<OrderItemDTO>()
                 }).ToList() ?? new List<OrderDTO>(),
 
@@ -81,11 +78,23 @@ namespace ECommerce.Application.Services
                     StockAmount = p.StockAmount,
                     Enabled = p.Enabled,
                     IsFeatured = p.IsFeatured,
+                    CategoryName = p.Category?.Name ?? "General",
                     MainImageUrl = p.Images?.FirstOrDefault(x => x.IsMain)?.Url
                                    ?? p.Images?.FirstOrDefault()?.Url
-                                   ?? "/img/product/default.jpg"
+                                   ?? "default.jpg",
+                    // --- Yorumları DTO'ya aktar ---
+                    Comments = p.Comments?.Select(c => new ProductCommentDTO
+                    {
+                        Id = c.Id,
+                        UserName = c.User?.FirstName + " " + c.User?.LastName, 
+                        Text = c.Text,
+                        StarCount = c.StarCount,
+                        IsConfirmed = c.IsConfirmed,
+                        CreatedAt = c.CreatedAt
+                    }).ToList() ?? new List<ProductCommentDTO>()
                 }).ToList() ?? new List<ProductDTO>()
             };
+
             }
 
         // Bütün kullanıcıları al
@@ -145,6 +154,11 @@ namespace ECommerce.Application.Services
             var user = await _userRepository.GetByIdAsync(id);
             if (user != null)
             {
+                if (user.Role?.Name == "SystemAdmin")
+                {
+                    throw new InvalidOperationException("The System Administrator account cannot be deleted.");
+                }
+
                 await _userRepository.DeleteAsync(user);
                 await _userRepository.SaveAsync();
             }
@@ -182,6 +196,10 @@ namespace ECommerce.Application.Services
         // Kullanıcı kaydetme (async)
         public async Task<UserDTO> RegisterAsync(UserDTO dto)
         {
+            if (string.IsNullOrWhiteSpace(dto.Password))
+            {
+                throw new Exception("Password is required for the registration.");
+            }
             var user = new UserEntity
             {
                 Email = dto.Email,
@@ -205,12 +223,19 @@ namespace ECommerce.Application.Services
 
 
         // Authenticate
-        public async Task<UserDTO?> AuthenticateAsync(string email, string password)
+        public async Task<LoginResponseDTO?> AuthenticateAsync(string email, string password)
         {
             var user = await _userRepository.GetByEmailAsync(email);
+
             if (user != null && user.Password == password)
             {
-                return MapToDto(user);
+                // Interface bizden LoginResponseDTO bekliyor, paketi hazırlıyoruz:
+                return new LoginResponseDTO
+                {
+                    // Şimdilik test için sabit string, normalde JWT üretilmeli
+                    Token = "GENERATE_JWT_TOKEN_HERE",
+                    User = MapToDto(user)
+                };
             }
             return null;
         }
@@ -218,15 +243,22 @@ namespace ECommerce.Application.Services
 
 
         // ------------------- REQUEST SELLER STATUS -------------------
+        // API tarafındaki UserService.cs
         public async Task RequestSellerStatusAsync(int userId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
-            if (user != null && !user.IsSellerApproved)
-            {
-                user.HasPendingSellerRequest = true;
-                await _userRepository.UpdateAsync(user);
-                await _userRepository.SaveAsync();
-            }
+            if (user == null || user.IsSellerApproved || user.HasPendingSellerRequest) return;
+
+            user.HasPendingSellerRequest = true;
+            await _userRepository.UpdateAsync(user);
+            await _userRepository.SaveAsync();
+        }
+
+        public async Task RequestSellerStatusAsync()
+        {
+            // API tarafında bu metod genellikle doğrudan çağrılmaz.
+            // Eğer çağrılırsa hata fırlatabilir veya boş bırakılabilir.
+            throw new NotImplementedException("Methods with IDs should be used on the API side.");
         }
 
         //--------------TOGGLE-------------------
@@ -235,6 +267,12 @@ namespace ECommerce.Application.Services
             var user = await _userRepository.GetByIdAsync(userId);
             if (user != null)
             {
+                // SystemAdmin hesabı dondurulamaz!
+                if (user.Role?.Name == "SystemAdmin")
+                {
+                   throw new InvalidOperationException("The System Administrator account is protected and cannot be deactivated.");
+                }
+
                 user.Enabled = !user.Enabled;
                 await _userRepository.UpdateAsync(user);
                 await _userRepository.SaveAsync();
@@ -253,6 +291,64 @@ namespace ECommerce.Application.Services
                 await _userRepository.UpdateAsync(user);
                 await _userRepository.SaveAsync();
             }
+        }
+
+        public async Task<bool> InitiatePasswordResetAsync(string email)
+        {
+            var user = await _userRepository.GetByEmailAsync(email);
+            if (user == null) return false;
+
+            // 1. Güvenli ve benzersiz bir token oluştur
+            user.PasswordResetToken = Guid.NewGuid().ToString();
+            user.TokenExpiresAt = DateTime.Now.AddHours(2); // 2 saat geçerli
+
+            await _userRepository.UpdateAsync(user);
+            await _userRepository.SaveAsync();
+
+            // 2. Burada EmailService üzerinden mail göndereceğiz
+            // Örn: _emailService.SendResetMail(user.Email, user.ResetToken);
+
+            return true;
+        }
+
+        public async Task<bool> VerifyResetTokenAsync(string token)
+        {
+            var user = await _userRepository.GetByResetTokenAsync(token);
+
+            // Kullanıcı var mı ve token süresi dolmamış mı?
+            if (user != null && user.TokenExpiresAt > DateTime.Now)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public async Task<bool> ResetPasswordAsync(string token, string newPassword)
+        {
+            // 1. Token'a sahip kullanıcıyı bul (UserEntity'de ResetToken alanı olmalı)
+            var user = await _userRepository.GetByResetTokenAsync(token); // Repository'e bu metod eklenmeli!!!
+
+            if (user == null || user.TokenExpiresAt < DateTime.Now)
+                return false;
+
+            // 2. Şifreyi güncelle (Normalde Hashlenmeli!)
+            user.Password = newPassword;
+            user.PasswordResetToken = null; // Token'ı tek kullanımlık yap
+            user.TokenExpiresAt = null;
+
+            await _userRepository.UpdateAsync(user);
+            await _userRepository.SaveAsync();
+            return true;
+        }
+
+        public async Task<UserDTO?> GetCurrentUserAsync(int userId, bool includeOrders = false, bool includeProducts = false)
+        {
+            return await GetAsync(userId, includeOrders, includeProducts);
+        }
+
+        public async Task UpdateCurrentUserAsync(UserDTO dto)
+        {
+            await UpdateAsync(dto); // Mevcut UpdateAsync metodu kullanılabilir
         }
     }
 }

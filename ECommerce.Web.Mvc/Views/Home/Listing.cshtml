@@ -6,7 +6,7 @@
 @{
     ViewData["Title"] = "Shop";
     ViewData["PageTitle"] = ViewData["Title"];
-    var isAdmin = User.IsInRole("Admin");
+    var isAdmin = User.IsInRole("Admin") || User.IsInRole("SystemAdmin");
   
 }
 @Html.AntiForgeryToken()
@@ -49,7 +49,7 @@
                         <div class="col-lg-4 col-md-6 col-sm-6">
                             <div class="product__item">
 
-                                <div class="product__item__pic set-bg" data-setbg="@Url.Content(product.ImageUrl)">
+                                <div class="product__item__pic set-bg" data-setbg="@ImageHelper.GetUrl(product.ImageUrl)">
                                     <!-- Fotoðrafýn üzerine link ekliyoruz -->
                                     <a href="@Url.Action("ProductDetail", "Home", new { id = product.Id })" class="product-link"></a>
                                     @if (product.IsOnSale)
@@ -61,7 +61,7 @@
                                                                       
 
                                     <ul class="product__item__pic__hover">
-                                        @if (User.IsInRole("Admin"))
+                                        @if (isAdmin)
                                         {
                                         <li>
                                                 <a href="javascript:void(0);" style="cursor: not-allowed; opacity: 0.5;" title="Admins cannot add favorites" class="admin-disabled">
@@ -125,7 +125,7 @@
                                         <input type="hidden" name="productId" value="@product.Id" />
                                         <input type="hidden" name="name" value="@product.Name" />
                                         <input type="hidden" name="price" value="@product.Price" />
-                                        <input type="hidden" name="imageUrl" value="@product.ImageUrl" />
+                                        <input type="hidden" name="imageUrl" value="@ImageHelper.GetUrl(product.ImageUrl)" />
                                         <input type="number" name="quantity" value="1" min="1" style="width:50px; margin-right:10px;" />
                                         @if (!product.Enabled)
                                             {
@@ -136,7 +136,7 @@
                                             }
                                             else
                                             {
-                                                @if (User.IsInRole("Admin"))
+                                            @if (isAdmin)
                                                 {
                                                 <button type="submit" class="site-btn" style="opacity:0.5; cursor:not-allowed;" title="Admins cannot shop">
                                                     <i class="fa fa-shopping-cart"></i> Add to Cart

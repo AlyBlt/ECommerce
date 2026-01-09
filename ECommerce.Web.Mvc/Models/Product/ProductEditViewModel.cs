@@ -29,7 +29,8 @@ namespace ECommerce.Web.Mvc.Models.Product
         public string Details { get; set; }
         [Required]
         public string ImageUrl {  get; set; }
+        public IFormFile? ImageFile { get; set; }
 
-        //public List<CategoryViewModel> Categories { get; set; }
+
     }
 }

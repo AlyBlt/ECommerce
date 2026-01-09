@@ -5,7 +5,12 @@
             <div class="col-lg-3 col-md-6 col-sm-6">
                 <div class="footer__about">
                     <div class="footer__about__logo">
-                        <a href="/"><img src="~/img/logo.png?v2" alt="HelloWorld Logo" style="border-radius:5px;"></a>
+                        @* --- DÜZENLENEN KISIM: Logo TagHelper ile çekildi --- *@
+                        <a href="/">
+                            <my-img file-name="@StaticFiles.Logo"
+                                    alt="HelloWorld Logo"
+                                    style="border-radius:5px;" />
+                        </a>
                     </div>
                     <ul>
                         <li>Address: 60-49 Road 11378 New York</li>

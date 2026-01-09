@@ -2,8 +2,7 @@
 using ECommerce.Application.Interfaces.Repositories;
 using ECommerce.Application.Interfaces.Services;
 using ECommerce.Domain.Entities;
-using System.Collections.Generic;
-using System.Linq;
+
 
 namespace ECommerce.Application.Services
 {
@@ -16,7 +15,7 @@ namespace ECommerce.Application.Services
             _favoriteRepository = favoriteRepository;
         }
 
-        public async Task<IEnumerable<FavoriteDTO>> GetByUserAsync(int userId)
+        public async Task<IEnumerable<FavoriteDTO>> GetByUserAsync(int userId, string? token = null)
         {
             var favorites = await _favoriteRepository.GetByUserWithProductAsync(userId);
             return favorites.Select(f => new FavoriteDTO
@@ -26,7 +25,7 @@ namespace ECommerce.Application.Services
                 ProductId = f.ProductId,
                 ProductName = f.Product?.Name ?? "Unknown Product",
                 ProductPrice = f.Product?.Price ?? 0,
-                ProductImageUrl = f.Product?.Images.FirstOrDefault(i => i.IsMain)?.Url ?? "/img/product/default.jpg",
+                ProductImageUrl = f.Product?.Images.FirstOrDefault(i => i.IsMain)?.Url ?? "default.jpg",
                 CreatedAt = f.CreatedAt
             }).ToList();
 
@@ -74,6 +73,15 @@ namespace ECommerce.Application.Services
 
                 await _favoriteRepository.SaveAsync();
             }
+        }
+
+        public async Task BatchAddAsync(int userId, List<int> productIds, string? token = null)
+        {
+            foreach (var productId in productIds)
+            {
+                await AddAsync(userId, productId);
+            }
+            await _favoriteRepository.SaveAsync();
         }
     }
 }

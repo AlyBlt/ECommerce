@@ -1,14 +1,11 @@
-﻿using ECommerce.Application.DTOs.User;
+﻿using ECommerce.Application.Filters;
 using ECommerce.Application.Interfaces.Services;
 using ECommerce.Web.Mvc.Models.Comment;
 using ECommerce.Web.Mvc.Models.Home;
 using ECommerce.Web.Mvc.Models.Order;
 using ECommerce.Web.Mvc.Models.User;
-using ECommerce.Web.MVC.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 
 namespace ECommerce.Web.Mvc.Controllers
@@ -17,22 +14,27 @@ namespace ECommerce.Web.Mvc.Controllers
     [ActiveUserAuthorize]
     public class ProfileController : Controller
     {
-       private readonly IUserService _userService;
+        private readonly IUserService _userApiService;
 
-        public ProfileController(IUserService userService)
+        public ProfileController(IUserService userApiService)
         {
-            _userService = userService;
+            _userApiService = userApiService;
         }
 
         // Cookie Authentication içindeki NameIdentifier (UserId) claim'ini okur
-        private int GetCurrentUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim)) return 0; // Veya hata fırlat
+            return int.Parse(userIdClaim);
+        }
 
         // ---------------- DETAILS (GET) ----------------
         [Route("profile")]
         [Route("profile/details")]
         public async Task<IActionResult> Details()
         {
-            var userDto = await _userService.GetAsync(GetCurrentUserId());
+            var userDto = await _userApiService.GetCurrentUserAsync(GetCurrentUserId());
             if (userDto == null) return RedirectToAction("Login", "Auth");
 
             var model = new UserDetailsViewModel
@@ -54,7 +56,7 @@ namespace ECommerce.Web.Mvc.Controllers
         [Route("profile/edit")]
         public async Task<IActionResult> Edit()
         {
-            var userDto = await _userService.GetAsync(GetCurrentUserId());
+            var userDto = await _userApiService.GetCurrentUserAsync(GetCurrentUserId());
             if (userDto == null) return RedirectToAction("Login", "Auth");
 
             var model = new UserEditViewModel
@@ -78,16 +80,17 @@ namespace ECommerce.Web.Mvc.Controllers
         {
             if (!ModelState.IsValid) return View(model);
 
-            var userDto = await _userService.GetAsync(GetCurrentUserId());
+            var userDto = await _userApiService.GetCurrentUserAsync(GetCurrentUserId());
             if (userDto == null) return NotFound();
 
+            userDto.Id = GetCurrentUserId();
             userDto.FirstName = model.FirstName;
             userDto.LastName = model.LastName;
             userDto.Email = model.Email;
             userDto.Phone = model.Phone;
             userDto.Address = model.Address;
 
-            await _userService.UpdateAsync(userDto);
+            await _userApiService.UpdateCurrentUserAsync(userDto);
 
             TempData["Success"] = "Profile updated successfully.";
             return RedirectToAction(nameof(Details));
@@ -99,7 +102,7 @@ namespace ECommerce.Web.Mvc.Controllers
         public async Task<IActionResult> MyOrders()
         {
             // Kullanıcıyı siparişleriyle birlikte getir (Service tarafında Include edilmeli)
-            var userDto = await _userService.GetAsync(GetCurrentUserId(), includeOrders: true);
+            var userDto = await _userApiService.GetCurrentUserAsync(GetCurrentUserId(), includeOrders: true);
             if (userDto == null) return NotFound();
 
             ViewBag.User = new UserInformationViewModel
@@ -138,7 +141,7 @@ namespace ECommerce.Web.Mvc.Controllers
         {
             // TempData'daki veriyi temizle
             TempData.Clear();
-            var userDto = await _userService.GetAsync(GetCurrentUserId(), includeProducts: true);
+            var userDto = await _userApiService.GetCurrentUserAsync(GetCurrentUserId(),includeProducts: true);
             if (userDto == null || !userDto.IsSellerApproved) return Forbid();
                        
 
@@ -154,7 +157,7 @@ namespace ECommerce.Web.Mvc.Controllers
                 Id = p.Id,
                 Name = p.Name,
                 Category = p.CategoryName ?? "General",
-                ImageUrl = p.MainImageUrl ?? "/img/product/default.jpg",
+                ImageUrl = p.MainImageUrl,
                 Price = p.Price,
                 OldPrice = p.OldPrice,
                 Enabled = p.Enabled,
@@ -179,7 +182,7 @@ namespace ECommerce.Web.Mvc.Controllers
         [Route("profile/request-seller")]
         public async Task <IActionResult> RequestSellerRole()
         {
-            var userDto = await _userService.GetAsync(GetCurrentUserId());
+            var userDto = await _userApiService.GetCurrentUserAsync(GetCurrentUserId());
             if (userDto == null) return NotFound();
             ViewBag.IsSellerApproved = userDto.IsSellerApproved;
             ViewBag.HasPendingRequest = userDto.HasPendingSellerRequest;
@@ -192,21 +195,22 @@ namespace ECommerce.Web.Mvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RequestSellerRole(RequestSellerViewModel model)
         {
-            var userDto = await _userService.GetAsync(GetCurrentUserId());
-            if (userDto == null) return NotFound();
-
-            if (!userDto.IsSellerApproved && !userDto.HasPendingSellerRequest)
+            try
             {
-                await _userService.RequestSellerStatusAsync(userDto.Id);
+                // Servisi çağırıyoruz
+                await _userApiService.RequestSellerStatusAsync();
+
                 TempData["Success"] = "Seller request submitted. Admin approval pending.";
                 return RedirectToAction(nameof(Details));
             }
-            else
+            catch (HttpRequestException ex)
             {
-                TempData["Info"] = "You already have a pending request.";
-                return RedirectToAction(nameof(RequestSellerRole));
+                // 404 veya 500 hatası gelirse buraya düşer
+                ModelState.AddModelError("", "API Error: Request could not be completed.");
+                return View(model);
             }
-
         }
+
+
     }
 }

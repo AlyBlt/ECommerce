@@ -32,7 +32,7 @@
     var favoriteService = Context.RequestServices.GetService<IFavoriteService>();
 
     // Admin kontrolü eklendi
-    bool isAdmin = User.IsInRole("Admin");
+    bool isAdmin = User.IsInRole("Admin") || User.IsInRole("SystemAdmin");
     if (userId.HasValue)
     {
         // Adminse sepetteki ürünleri sıfırla
@@ -102,7 +102,8 @@
 
                         <!-- Dil seçimi -->
                         <div class="header__top__right__language">
-                            <img src="~/img/language.png" alt="Language">
+                            @* --- DÜZENLENEN KISIM: Dil ikonu StaticFiles üzerinden --- *@
+                            <my-img file-name="@StaticFiles.LanguageIcon" alt="Language" />
                             <div>English</div>
                             <span class="arrow_carrot-down"></span>
                             <ul>
@@ -140,7 +141,10 @@
             <div class="col-lg-3 col-md-3 col-sm-6">
                 <div class="header__logo d-flex justify-content-center align-items-center" style="height: 100px;">
                     <a href="/">
-                        <img src="~/img/logo.png?v2" alt="HelloWorld Logo" style="width:100px; height:auto; border-radius:5px;">
+                        @* --- DÜZENLENEN KISIM: Logo TagHelper ile çekildi --- *@
+                        <my-img file-name="@StaticFiles.Logo"
+                                alt="HelloWorld Logo"
+                                style="width:100px; height:auto; border-radius:5px;" />
                     </a>
                 </div>
             </div>
